@@ -1,21 +1,9 @@
 You are reviewing Go code for API design issues.
 
-## Function: {{.Name}}
-Package: {{.Package}}
-{{if .Receiver}}Receiver: {{.Receiver}}{{end}}
-Signature: {{.Signature}}
-{{if .Godoc}}Documentation: {{.Godoc}}{{end}}
+{{template "function-context" .}}
+{{template "summary-context" .}}
 
-```go
-{{.Body}}
-```
-
-{{if .Summary}}
-## Function Summary
-Purpose: {{.Summary.Purpose}}
-Behavior: {{.Summary.Behavior}}
-{{end}}
-
+## API Design Review Checklist
 Look for:
 - Exported functions without documentation
 - Inconsistent naming (mixedCase vs under_score, abbreviations)
@@ -30,16 +18,5 @@ Look for:
 - Unexported types in exported function signatures
 - Stutter in names (package user with func UserNew)
 
-Respond with JSON:
-{
-  "issues": [
-    {
-      "line": <line number>,
-      "severity": "medium|low|info",
-      "message": "description of the API design issue",
-      "suggestion": "how to improve it"
-    }
-  ]
-}
-
-If no issues found, return {"issues": []}
+Only report actual API design issues. If no issues found, return {"issues": []}.
+{{template "issues-format" .}}

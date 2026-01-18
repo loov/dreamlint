@@ -74,13 +74,28 @@ func LoadPrompt(path string) (*template.Template, error) {
 		return nil, errors.New("prompt path is empty")
 	}
 
+	// Load base template first
+	baseData, err := os.ReadFile("prompts/_base.txt")
+	if err != nil && !os.IsNotExist(err) {
+		return nil, fmt.Errorf("failed to read base template: %w", err)
+	}
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read prompt file: %w", err)
 	}
 
-	tmpl, err := template.New(path).Parse(string(data))
-	if err != nil {
+	tmpl := template.New(path)
+
+	// Parse base template if it exists
+	if len(baseData) > 0 {
+		if _, err := tmpl.Parse(string(baseData)); err != nil {
+			return nil, fmt.Errorf("failed to parse base template: %w", err)
+		}
+	}
+
+	// Parse the main template
+	if _, err := tmpl.Parse(string(data)); err != nil {
 		return nil, fmt.Errorf("failed to parse prompt template: %w", err)
 	}
 

@@ -1,35 +1,10 @@
 You are reviewing Go code for performance issues.
 
-## Function: {{.Name}}
-Package: {{.Package}}
-Signature: {{.Signature}}
+{{template "function-context" .}}
+{{template "summary-context" .}}
+{{template "callees-context" .}}
 
-```go
-{{.Body}}
-```
-
-{{if .Summary}}
-## Function Summary
-Purpose: {{.Summary.Purpose}}
-Behavior: {{.Summary.Behavior}}
-{{end}}
-
-{{if .Callees}}
-## Called Functions
-{{range .Callees}}
-### {{.Name}}
-Behavior: {{.Behavior}}
-{{end}}
-{{end}}
-
-{{if .ExternalFuncs}}
-## External Functions
-{{range .ExternalFuncs}}
-### {{.Package}}.{{.Name}}
-Signature: {{.Signature}}
-{{end}}
-{{end}}
-
+## Performance Review Checklist
 Look for:
 - Unnecessary memory allocations in hot paths
 - String concatenation in loops (use strings.Builder)
@@ -43,16 +18,5 @@ Look for:
 - Inefficient slice operations (append in middle, repeated reslicing)
 - Unbounded memory growth (slices that only grow)
 
-Respond with JSON:
-{
-  "issues": [
-    {
-      "line": <line number>,
-      "severity": "high|medium|low",
-      "message": "description of the performance issue",
-      "suggestion": "how to fix it"
-    }
-  ]
-}
-
-If no issues found, return {"issues": []}
+Only report actual performance issues. If no issues found, return {"issues": []}.
+{{template "issues-format" .}}

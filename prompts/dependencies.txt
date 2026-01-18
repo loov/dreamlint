@@ -1,17 +1,7 @@
 You are reviewing Go code for dependency usage issues.
 
-## Function: {{.Name}}
-Package: {{.Package}}
-Signature: {{.Signature}}
-
-```go
-{{.Body}}
-```
-
-{{if .Summary}}
-## Function Summary
-Purpose: {{.Summary.Purpose}}
-{{end}}
+{{template "function-context" .}}
+{{template "summary-context" .}}
 
 {{if .ExternalFuncs}}
 ## External Functions Used
@@ -22,6 +12,7 @@ Signature: {{.Signature}}
 {{end}}
 {{end}}
 
+## Dependency Review Checklist
 Look for:
 - Usage of deprecated functions or types
 - Functions marked as unsafe or experimental
@@ -36,16 +27,5 @@ Look for:
 - Violations of intended package layering
 - Using cgo when pure Go alternatives exist
 
-Respond with JSON:
-{
-  "issues": [
-    {
-      "line": <line number>,
-      "severity": "high|medium|low",
-      "message": "description of the dependency issue",
-      "suggestion": "how to fix it"
-    }
-  ]
-}
-
-If no issues found, return {"issues": []}
+Only report actual dependency issues. If no issues found, return {"issues": []}.
+{{template "issues-format" .}}

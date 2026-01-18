@@ -1,0 +1,65 @@
+{{define "function-context"}}
+{{if .Functions}}
+## Functions (mutually recursive group)
+{{range .Functions}}
+### {{.Name}}
+Signature: {{.Signature}}
+{{if .Godoc}}Documentation: {{.Godoc}}{{end}}
+
+```go
+{{.Body}}
+```
+{{end}}
+{{else}}
+## Function: {{.Name}}
+Package: {{.Package}}
+{{if .Receiver}}Receiver: {{.Receiver}}{{end}}
+Signature: {{.Signature}}
+{{if .Godoc}}Documentation: {{.Godoc}}{{end}}
+
+```go
+{{.Body}}
+```
+{{end}}
+{{end}}
+
+{{define "summary-context"}}
+{{if .Summary}}
+## Function Summary
+Purpose: {{.Summary.Purpose}}
+Behavior: {{.Summary.Behavior}}
+{{if .Summary.Invariants}}Invariants:
+{{range .Summary.Invariants}}- {{.}}
+{{end}}{{end}}
+{{if .Summary.Security}}Security Notes:
+{{range .Summary.Security}}- {{.}}
+{{end}}{{end}}
+{{end}}
+{{end}}
+
+{{define "callees-context"}}
+{{if .Callees}}
+## Called Functions
+{{range .Callees}}
+### {{.Name}}
+Purpose: {{.Purpose}}
+Behavior: {{.Behavior}}
+{{if .Invariants}}Invariants: {{range .Invariants}}- {{.}}
+{{end}}{{end}}
+{{if .Security}}Security: {{range .Security}}- {{.}}
+{{end}}{{end}}
+{{end}}
+{{end}}
+{{end}}
+
+{{define "issues-format"}}
+Respond with JSON containing an array of issues. Each issue must have:
+- "function": name of the function where the issue occurs
+- "line": line number within the function (integer)
+- "severity": "critical", "important", or "minor"
+- "message": description of the issue
+- "suggestion": how to fix it (optional)
+
+If no issues found, return {"issues": []}.
+Be specific about line numbers and provide actionable suggestions.
+{{end}}

@@ -1,38 +1,7 @@
 You are analyzing a Go function to create a summary of its behavior.
 
-{{if .Functions}}
-## Functions (mutually recursive group)
-{{range .Functions}}
-### {{.Name}}
-Signature: {{.Signature}}
-{{if .Godoc}}Documentation: {{.Godoc}}{{end}}
-
-```go
-{{.Body}}
-```
-{{end}}
-{{else}}
-## Function: {{.Name}}
-Package: {{.Package}}
-{{if .Receiver}}Receiver: {{.Receiver}}{{end}}
-Signature: {{.Signature}}
-{{if .Godoc}}Documentation: {{.Godoc}}{{end}}
-
-```go
-{{.Body}}
-```
-{{end}}
-
-{{if .Callees}}
-## Called Functions
-{{range .Callees}}
-### {{.Name}}
-Purpose: {{.Purpose}}
-Behavior: {{.Behavior}}
-{{if .Invariants}}Invariants: {{range .Invariants}}- {{.}}
-{{end}}{{end}}
-{{end}}
-{{end}}
+{{template "function-context" .}}
+{{template "callees-context" .}}
 
 Analyze this function and respond with JSON in this exact format:
 {

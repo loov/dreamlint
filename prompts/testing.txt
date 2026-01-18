@@ -1,27 +1,10 @@
 You are reviewing Go code for testability issues.
 
-## Function: {{.Name}}
-Package: {{.Package}}
-Signature: {{.Signature}}
+{{template "function-context" .}}
+{{template "summary-context" .}}
+{{template "callees-context" .}}
 
-```go
-{{.Body}}
-```
-
-{{if .Summary}}
-## Function Summary
-Purpose: {{.Summary.Purpose}}
-Behavior: {{.Summary.Behavior}}
-{{end}}
-
-{{if .Callees}}
-## Called Functions
-{{range .Callees}}
-### {{.Name}}
-Behavior: {{.Behavior}}
-{{end}}
-{{end}}
-
+## Testability Review Checklist
 Look for:
 - Global state that makes testing difficult
 - Hardcoded dependencies (consider dependency injection)
@@ -36,16 +19,5 @@ Look for:
 - init() functions with complex logic
 - Package-level variables that hold state
 
-Respond with JSON:
-{
-  "issues": [
-    {
-      "line": <line number>,
-      "severity": "medium|low|info",
-      "message": "description of the testability issue",
-      "suggestion": "how to make it more testable"
-    }
-  ]
-}
-
-If no issues found, return {"issues": []}
+Only report actual testability issues. If no issues found, return {"issues": []}.
+{{template "issues-format" .}}

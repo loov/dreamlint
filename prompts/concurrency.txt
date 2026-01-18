@@ -1,38 +1,10 @@
 You are reviewing Go code for concurrency issues.
 
-## Function: {{.Name}}
-Package: {{.Package}}
-Signature: {{.Signature}}
+{{template "function-context" .}}
+{{template "summary-context" .}}
+{{template "callees-context" .}}
 
-```go
-{{.Body}}
-```
-
-{{if .Summary}}
-## Function Summary
-Purpose: {{.Summary.Purpose}}
-Behavior: {{.Summary.Behavior}}
-{{if .Summary.Invariants}}Invariants: {{range .Summary.Invariants}}- {{.}}
-{{end}}{{end}}
-{{end}}
-
-{{if .Callees}}
-## Called Functions
-{{range .Callees}}
-### {{.Name}}
-Behavior: {{.Behavior}}
-{{end}}
-{{end}}
-
-{{if .ExternalFuncs}}
-## External Functions
-{{range .ExternalFuncs}}
-### {{.Package}}.{{.Name}}
-Signature: {{.Signature}}
-{{if .Godoc}}{{.Godoc}}{{end}}
-{{end}}
-{{end}}
-
+## Concurrency Review Checklist
 Look for:
 - Race conditions on shared state without synchronization
 - Goroutine leaks (goroutines that never terminate)
@@ -45,16 +17,5 @@ Look for:
 - Shared state modified in goroutines without protection
 - sync.Mutex copied by value
 
-Respond with JSON:
-{
-  "issues": [
-    {
-      "line": <line number>,
-      "severity": "high|medium|low",
-      "message": "description of the concurrency issue",
-      "suggestion": "how to fix it"
-    }
-  ]
-}
-
-If no issues found, return {"issues": []}
+Only report actual concurrency issues. If no issues found, return {"issues": []}.
+{{template "issues-format" .}}

@@ -1,33 +1,7 @@
 You are reviewing code cleanliness and maintainability of a Go function.
 
-{{if .Functions}}
-## Functions (mutually recursive group)
-{{range .Functions}}
-### {{.Name}}
-Signature: {{.Signature}}
-{{if .Godoc}}Documentation: {{.Godoc}}{{end}}
-
-```go
-{{.Body}}
-```
-{{end}}
-{{else}}
-## Function: {{.Name}}
-Package: {{.Package}}
-{{if .Receiver}}Receiver: {{.Receiver}}{{end}}
-Signature: {{.Signature}}
-{{if .Godoc}}Documentation: {{.Godoc}}{{end}}
-
-```go
-{{.Body}}
-```
-{{end}}
-
-{{if .Summary}}
-## Function Summary
-Purpose: {{.Summary.Purpose}}
-Behavior: {{.Summary.Behavior}}
-{{end}}
+{{template "function-context" .}}
+{{template "summary-context" .}}
 
 ## Code Cleanliness Review Checklist
 Look for these issues:
@@ -43,20 +17,6 @@ Look for these issues:
 - Inconsistent Style: Mixed naming conventions or formatting
 
 Note: This is NOT a security or error handling review. Focus only on code quality and maintainability.
-
-Respond with JSON in this exact format:
-{
-  "issues": [
-    {
-      "line": <line number as integer>,
-      "severity": "medium|low|info",
-      "message": "what the issue is",
-      "suggestion": "how to improve it"
-    }
-  ]
-}
-
 Only report actual cleanliness issues. If no issues found, return {"issues": []}.
-Use severity "info" for minor style suggestions, "low" for improvements, "medium" for maintainability concerns.
-Do NOT use "high" severity for cleanliness issues.
-Be specific about line numbers and provide actionable suggestions.
+Use severity "minor" for style suggestions, "important" for maintainability concerns.
+{{template "issues-format" .}}

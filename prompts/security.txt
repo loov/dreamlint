@@ -1,47 +1,8 @@
 You are performing a security audit of a Go function.
 
-{{if .Functions}}
-## Functions (mutually recursive group)
-{{range .Functions}}
-### {{.Name}}
-Signature: {{.Signature}}
-{{if .Godoc}}Documentation: {{.Godoc}}{{end}}
-
-```go
-{{.Body}}
-```
-{{end}}
-{{else}}
-## Function: {{.Name}}
-Package: {{.Package}}
-{{if .Receiver}}Receiver: {{.Receiver}}{{end}}
-Signature: {{.Signature}}
-{{if .Godoc}}Documentation: {{.Godoc}}{{end}}
-
-```go
-{{.Body}}
-```
-{{end}}
-
-{{if .Summary}}
-## Function Summary
-Purpose: {{.Summary.Purpose}}
-Behavior: {{.Summary.Behavior}}
-{{if .Summary.Security}}Security Notes:
-{{range .Summary.Security}}- {{.}}
-{{end}}{{end}}
-{{end}}
-
-{{if .Callees}}
-## Called Functions
-{{range .Callees}}
-### {{.Name}}
-Purpose: {{.Purpose}}
-Behavior: {{.Behavior}}
-{{if .Security}}Security: {{range .Security}}- {{.}}
-{{end}}{{end}}
-{{end}}
-{{end}}
+{{template "function-context" .}}
+{{template "summary-context" .}}
+{{template "callees-context" .}}
 
 ## Security Review Checklist
 Look for these vulnerability categories:
@@ -56,17 +17,5 @@ Look for these vulnerability categories:
 - Race Conditions: Unsynchronized access to shared state
 - Information Disclosure: Sensitive data in logs or errors
 
-Respond with JSON in this exact format:
-{
-  "issues": [
-    {
-      "line": <line number as integer>,
-      "severity": "high|medium|low",
-      "message": "what the issue is",
-      "suggestion": "how to fix it"
-    }
-  ]
-}
-
 Only report actual security issues. If no issues found, return {"issues": []}.
-Be specific about line numbers and provide actionable suggestions.
+{{template "issues-format" .}}

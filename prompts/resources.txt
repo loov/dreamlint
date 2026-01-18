@@ -1,36 +1,10 @@
 You are reviewing Go code for resource management issues.
 
-## Function: {{.Name}}
-Package: {{.Package}}
-Signature: {{.Signature}}
+{{template "function-context" .}}
+{{template "summary-context" .}}
+{{template "callees-context" .}}
 
-```go
-{{.Body}}
-```
-
-{{if .Summary}}
-## Function Summary
-Purpose: {{.Summary.Purpose}}
-Behavior: {{.Summary.Behavior}}
-{{end}}
-
-{{if .Callees}}
-## Called Functions
-{{range .Callees}}
-### {{.Name}}
-Behavior: {{.Behavior}}
-{{end}}
-{{end}}
-
-{{if .ExternalFuncs}}
-## External Functions
-{{range .ExternalFuncs}}
-### {{.Package}}.{{.Name}}
-Signature: {{.Signature}}
-{{if .Godoc}}{{.Godoc}}{{end}}
-{{end}}
-{{end}}
-
+## Resource Management Review Checklist
 Look for:
 - Unclosed files, connections, or response bodies
 - Missing defer for cleanup operations
@@ -45,16 +19,5 @@ Look for:
 - Temporary files not cleaned up
 - Database transactions not committed or rolled back
 
-Respond with JSON:
-{
-  "issues": [
-    {
-      "line": <line number>,
-      "severity": "high|medium|low",
-      "message": "description of the resource management issue",
-      "suggestion": "how to fix it"
-    }
-  ]
-}
-
-If no issues found, return {"issues": []}
+Only report actual resource management issues. If no issues found, return {"issues": []}.
+{{template "issues-format" .}}
