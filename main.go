@@ -20,7 +20,7 @@ import (
 
 func main() {
 	configPath := flag.String("config", "reviewmod.cue", "path to config file")
-	format := flag.String("format", "both", "output format: json, markdown, or both")
+	format := flag.String("format", "all", "output format: json, markdown, sarif, or all")
 	resume := flag.Bool("resume", false, "resume from existing partial report")
 	flag.Parse()
 
@@ -182,18 +182,25 @@ func run(configPath, format string, resume bool, patterns []string) error {
 	}
 
 	// Write final output
-	if format == "json" || format == "both" {
+	if format == "json" || format == "all" {
 		if err := report.WriteJSONFile(rpt, cfg.Output.JSON); err != nil {
 			return fmt.Errorf("write json: %w", err)
 		}
 		fmt.Printf("Wrote %s\n", cfg.Output.JSON)
 	}
 
-	if format == "markdown" || format == "both" {
+	if format == "markdown" || format == "all" {
 		if err := report.WriteMarkdownFile(rpt, cfg.Output.Markdown); err != nil {
 			return fmt.Errorf("write markdown: %w", err)
 		}
 		fmt.Printf("Wrote %s\n", cfg.Output.Markdown)
+	}
+
+	if format == "sarif" || format == "all" {
+		if err := report.WriteSARIFFile(rpt, cfg.Output.SARIF); err != nil {
+			return fmt.Errorf("write sarif: %w", err)
+		}
+		fmt.Printf("Wrote %s\n", cfg.Output.SARIF)
 	}
 
 	// Print summary
@@ -206,14 +213,19 @@ func run(configPath, format string, resume bool, patterns []string) error {
 }
 
 func saveProgress(rpt *report.Report, cfg *config.Config, format string) {
-	if format == "json" || format == "both" {
+	if format == "json" || format == "all" {
 		if err := report.WriteJSONFile(rpt, cfg.Output.JSON); err != nil {
 			fmt.Printf("Warning: failed to save progress: %v\n", err)
 		}
 	}
-	if format == "markdown" || format == "both" {
+	if format == "markdown" || format == "all" {
 		if err := report.WriteMarkdownFile(rpt, cfg.Output.Markdown); err != nil {
 			fmt.Printf("Warning: failed to save markdown: %v\n", err)
+		}
+	}
+	if format == "sarif" || format == "all" {
+		if err := report.WriteSARIFFile(rpt, cfg.Output.SARIF); err != nil {
+			fmt.Printf("Warning: failed to save sarif: %v\n", err)
 		}
 	}
 }

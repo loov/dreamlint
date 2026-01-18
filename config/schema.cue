@@ -27,6 +27,7 @@ package config
 	output: {
 		json:     string | *"reviewmod-report.json"
 		markdown: string | *"reviewmod-report.md"
+		sarif:    string | *"reviewmod-report.sarif"
 	}
 	analyses: [...#AnalysisPass]
 }

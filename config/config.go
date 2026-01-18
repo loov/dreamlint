@@ -41,6 +41,7 @@ type CacheConfig struct {
 type OutputConfig struct {
 	JSON     string `json:"json"`
 	Markdown string `json:"markdown"`
+	SARIF    string `json:"sarif"`
 }
 
 // AnalysisPass defines a single analysis pass
