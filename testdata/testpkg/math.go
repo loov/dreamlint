@@ -1,7 +1,10 @@
 package testpkg
 
 // Add adds two numbers.
+//
+// TODO: should this handle overflow?
 func Add(a, b int) int {
+	// This adds two numbers together.
 	return a + b
 }
 
@@ -11,6 +14,7 @@ func Add(a, b int) int {
 func Multiply(a, b int) int {
 	result := 0
 	for i := 0; i < b; i++ {
+		// Increment the result by a.
 		result = Add(result, a)
 	}
 	return result

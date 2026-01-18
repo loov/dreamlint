@@ -11,7 +11,10 @@ Package: testpkg
 
 ```go
 // Add adds two numbers.
+//
+// TODO: should this handle overflow?
 func Add(a, b int) int {
+	// This adds two numbers together.
 	return a + b
 }
 ```
@@ -36,7 +39,10 @@ Package: testpkg
 
 ```go
 // Add adds two numbers.
+//
+// TODO: should this handle overflow?
 func Add(a, b int) int {
+	// This adds two numbers together.
 	return a + b
 }
 ```
