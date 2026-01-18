@@ -30,10 +30,22 @@ func NewOpenAIClient(baseURL, apiKey string) *OpenAIClient {
 }
 
 type openAIRequest struct {
-	Model       string          `json:"model"`
-	Messages    []openAIMessage `json:"messages"`
-	MaxTokens   int             `json:"max_tokens,omitempty"`
-	Temperature float64         `json:"temperature,omitempty"`
+	Model          string          `json:"model"`
+	Messages       []openAIMessage `json:"messages"`
+	MaxTokens      int             `json:"max_tokens,omitempty"`
+	Temperature    float64         `json:"temperature,omitempty"`
+	ResponseFormat *responseFormat `json:"response_format,omitempty"`
+}
+
+type responseFormat struct {
+	Type       string      `json:"type"`
+	JSONSchema *jsonSchema `json:"json_schema,omitempty"`
+}
+
+type jsonSchema struct {
+	Name   string         `json:"name"`
+	Strict bool           `json:"strict"`
+	Schema map[string]any `json:"schema"`
 }
 
 type openAIMessage struct {
@@ -76,6 +88,17 @@ func (c *OpenAIClient) Complete(ctx context.Context, req Request) (Response, err
 		Messages:    messages,
 		MaxTokens:   req.Config.MaxTokens,
 		Temperature: req.Config.Temperature,
+	}
+
+	if req.Config.JSONSchema != nil {
+		oaiReq.ResponseFormat = &responseFormat{
+			Type: "json_schema",
+			JSONSchema: &jsonSchema{
+				Name:   req.Config.JSONSchema.Name,
+				Strict: true,
+				Schema: req.Config.JSONSchema.Schema,
+			},
+		}
 	}
 
 	body, err := json.Marshal(oaiReq)

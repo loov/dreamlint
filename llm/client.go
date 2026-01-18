@@ -26,6 +26,13 @@ type ModelConfig struct {
 	Model       string
 	MaxTokens   int
 	Temperature float64
+	JSONSchema  *JSONSchema
+}
+
+// JSONSchema defines the expected response structure
+type JSONSchema struct {
+	Name   string
+	Schema map[string]any
 }
 
 // Response holds the LLM output
