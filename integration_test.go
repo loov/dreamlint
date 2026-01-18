@@ -5,6 +5,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/loov/reviewmod/extract"
@@ -59,7 +60,7 @@ func Multiply(a, b int) int {
 	graph := extract.BuildCallgraph(pkgs)
 
 	// Multiply should call Add
-	if !contains(graph["testpkg.Multiply"], "testpkg.Add") {
+	if !slices.Contains(graph["testpkg.Multiply"], "testpkg.Add") {
 		t.Errorf("Multiply should call Add")
 	}
 
@@ -79,13 +80,4 @@ func Multiply(a, b int) int {
 	if units[1].Functions[0].Name != "Multiply" {
 		t.Errorf("second unit should be Multiply, got %s", units[1].Functions[0].Name)
 	}
-}
-
-func contains(slice []string, s string) bool {
-	for _, v := range slice {
-		if v == s {
-			return true
-		}
-	}
-	return false
 }

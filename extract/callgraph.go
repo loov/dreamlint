@@ -3,6 +3,7 @@ package extract
 
 import (
 	"fmt"
+	"slices"
 
 	"golang.org/x/tools/go/callgraph/cha"
 	"golang.org/x/tools/go/packages"
@@ -54,7 +55,7 @@ func BuildCallgraphFromPackages(pkgs []*packages.Package) map[string][]string {
 			}
 
 			// Avoid duplicates
-			if !contains(graph[callerID], calleeID) {
+			if !slices.Contains(graph[callerID], calleeID) {
 				graph[callerID] = append(graph[callerID], calleeID)
 			}
 		}
@@ -77,13 +78,4 @@ func funcID(fn *ssa.Function) string {
 	}
 
 	return fmt.Sprintf("%s.%s", pkg, name)
-}
-
-func contains(slice []string, s string) bool {
-	for _, v := range slice {
-		if v == s {
-			return true
-		}
-	}
-	return false
 }

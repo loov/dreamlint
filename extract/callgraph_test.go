@@ -4,6 +4,7 @@ package extract
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -36,12 +37,12 @@ func C() {}
 	graph := BuildCallgraph(pkgs)
 
 	// A calls B
-	if !contains(graph["testpkg.A"], "testpkg.B") {
+	if !slices.Contains(graph["testpkg.A"], "testpkg.B") {
 		t.Errorf("A should call B, got %v", graph["testpkg.A"])
 	}
 
 	// B calls C
-	if !contains(graph["testpkg.B"], "testpkg.C") {
+	if !slices.Contains(graph["testpkg.B"], "testpkg.C") {
 		t.Errorf("B should call C, got %v", graph["testpkg.B"])
 	}
 
