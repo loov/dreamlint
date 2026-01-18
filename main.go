@@ -22,6 +22,7 @@ func main() {
 	configPath := flag.String("config", "reviewmod.cue", "path to config file")
 	format := flag.String("format", "all", "output format: json, markdown, sarif, or all")
 	resume := flag.Bool("resume", false, "resume from existing partial report")
+	promptsDir := flag.String("prompts", "", "directory to load prompts from (overrides builtin prompts)")
 	flag.Parse()
 
 	patterns := flag.Args()
@@ -29,12 +30,12 @@ func main() {
 		patterns = []string{"./..."}
 	}
 
-	if err := run(*configPath, *format, *resume, patterns); err != nil {
+	if err := run(*configPath, *format, *resume, *promptsDir, patterns); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run(configPath, format string, resume bool, patterns []string) error {
+func run(configPath, format string, resume bool, promptsDir string, patterns []string) error {
 	// Load config
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
@@ -78,6 +79,9 @@ func run(configPath, format string, resume bool, patterns []string) error {
 
 	// Create pipeline
 	pipeline := analyze.NewPipeline(cfg, c, client, externalFuncs)
+	if promptsDir != "" {
+		pipeline.SetPromptsFS(os.DirFS(promptsDir))
+	}
 	if err := pipeline.LoadPrompts(); err != nil {
 		return fmt.Errorf("load prompts: %w", err)
 	}

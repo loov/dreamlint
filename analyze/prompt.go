@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -104,6 +105,43 @@ func LoadPrompt(path string) (*template.Template, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to read prompt file: %w", err)
 		}
+	}
+
+	tmpl := template.New(name)
+
+	// Parse base template if available
+	if len(baseData) > 0 {
+		if _, err := tmpl.Parse(string(baseData)); err != nil {
+			return nil, fmt.Errorf("failed to parse base template: %w", err)
+		}
+	}
+
+	// Parse the main template content into a named template
+	mainTmpl, err := tmpl.New(name).Parse(string(data))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse prompt template: %w", err)
+	}
+
+	return mainTmpl, nil
+}
+
+// LoadPromptFromFS loads a prompt template from a filesystem.
+// The name should be the prompt name (e.g., "summary", "security").
+func LoadPromptFromFS(fsys fs.FS, name string) (*template.Template, error) {
+	if name == "" {
+		return nil, errors.New("prompt name is empty")
+	}
+
+	// Load base template
+	baseData, err := fs.ReadFile(fsys, "_base.txt")
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return nil, fmt.Errorf("failed to read base template: %w", err)
+	}
+
+	// Load prompt
+	data, err := fs.ReadFile(fsys, name+".txt")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read prompt %s: %w", name, err)
 	}
 
 	tmpl := template.New(name)

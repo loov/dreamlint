@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"strings"
 	"text/template"
 
@@ -23,6 +24,7 @@ type Pipeline struct {
 	prompts       map[string]*template.Template
 	summaries     map[string]*SummaryResponse
 	externalFuncs map[string]*extract.ExternalFunc
+	promptsFS     fs.FS
 }
 
 // NewPipeline creates a new analysis pipeline
@@ -37,13 +39,28 @@ func NewPipeline(cfg *config.Config, c *cache.Cache, client llm.Client, external
 	}
 }
 
+// SetPromptsFS sets a filesystem to load prompts from.
+// When set, builtin: prompts will be loaded from this filesystem instead.
+func (p *Pipeline) SetPromptsFS(fsys fs.FS) {
+	p.promptsFS = fsys
+}
+
 // LoadPrompts loads all prompt templates from config
 func (p *Pipeline) LoadPrompts() error {
 	for _, pass := range p.config.Analyses {
 		if !pass.Enabled {
 			continue
 		}
-		tmpl, err := LoadPrompt(pass.Prompt)
+		var tmpl *template.Template
+		var err error
+
+		// If promptsFS is set and prompt is builtin, load from that filesystem
+		if p.promptsFS != nil && strings.HasPrefix(pass.Prompt, "builtin:") {
+			name := strings.TrimPrefix(pass.Prompt, "builtin:")
+			tmpl, err = LoadPromptFromFS(p.promptsFS, name)
+		} else {
+			tmpl, err = LoadPrompt(pass.Prompt)
+		}
 		if err != nil {
 			return fmt.Errorf("load prompt %s: %w", pass.Name, err)
 		}
