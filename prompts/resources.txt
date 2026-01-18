@@ -3,6 +3,7 @@ You are reviewing Go code for resource management issues.
 {{template "function-context" .}}
 {{template "summary-context" .}}
 {{template "callees-context" .}}
+{{template "external-funcs-context" .}}
 
 ## Resource Management Review Checklist
 Look for:

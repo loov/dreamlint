@@ -3,6 +3,7 @@ You are reviewing Go code for input validation issues.
 {{template "function-context" .}}
 {{template "summary-context" .}}
 {{template "callees-context" .}}
+{{template "external-funcs-context" .}}
 
 ## Input Validation Review Checklist
 Look for:
