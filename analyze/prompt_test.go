@@ -2,42 +2,52 @@
 package analyze
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestLoadPrompt(t *testing.T) {
-	dir := t.TempDir()
-
-	prompt := `You are analyzing the function: {{.Name}}
-
-Signature: {{.Signature}}
-
-Code:
-{{.Body}}
-
-Callees:
-{{range .Callees}}- {{.Name}}: {{.Purpose}}
-{{end}}
-`
-	if err := os.WriteFile(filepath.Join(dir, "test.txt"), []byte(prompt), 0644); err != nil {
-		t.Fatal(err)
+	// Test loading embedded prompts
+	prompts := []string{
+		"summary",
+		"security",
+		"errors",
+		"cleanliness",
+		"concurrency",
+		"performance",
+		"api-design",
+		"testing",
+		"logging",
+		"resources",
+		"validation",
+		"dependencies",
+		"complexity",
 	}
 
-	tmpl, err := LoadPrompt(filepath.Join(dir, "test.txt"))
+	for _, name := range prompts {
+		t.Run(name, func(t *testing.T) {
+			tmpl, err := LoadPrompt("builtin:" + name)
+			if err != nil {
+				t.Fatalf("LoadPrompt(builtin:%s): %v", name, err)
+			}
+			if tmpl == nil {
+				t.Fatal("template is nil")
+			}
+		})
+	}
+}
+
+func TestExecutePrompt(t *testing.T) {
+	tmpl, err := LoadPrompt("builtin:summary")
 	if err != nil {
 		t.Fatalf("LoadPrompt: %v", err)
 	}
 
 	ctx := PromptContext{
 		Name:      "Hello",
+		Package:   "main",
 		Signature: "func Hello(name string) string",
-		Body:      `return "Hello, " + name`,
-		Callees: []CalleeSummary{
-			{Name: "concat", Purpose: "concatenates strings"},
-		},
+		Body:      `func Hello(name string) string { return "Hello, " + name }`,
 	}
 
 	result, err := ExecutePrompt(tmpl, ctx)
@@ -49,7 +59,7 @@ Callees:
 		t.Errorf("result should contain function name")
 	}
 
-	if !strings.Contains(result, "concatenates strings") {
-		t.Errorf("result should contain callee purpose")
+	if !strings.Contains(result, "main") {
+		t.Errorf("result should contain package name")
 	}
 }

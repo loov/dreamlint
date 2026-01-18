@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"text/template"
 )
 
@@ -68,38 +70,58 @@ type SummaryContext struct {
 	Security   []string
 }
 
-// LoadPrompt loads a prompt template from a file
+// LoadPrompt loads a prompt template.
+// Paths starting with "builtin:" load from embedded prompts (e.g., "builtin:summary").
+// Other paths are loaded from the filesystem.
 func LoadPrompt(path string) (*template.Template, error) {
 	if path == "" {
 		return nil, errors.New("prompt path is empty")
 	}
 
-	// Load base template first
-	baseData, err := os.ReadFile("prompts/_base.txt")
-	if err != nil && !os.IsNotExist(err) {
-		return nil, fmt.Errorf("failed to read base template: %w", err)
+	var baseData, data []byte
+	var err error
+	var name string
+
+	if strings.HasPrefix(path, "builtin:") {
+		// Load from embedded prompts
+		name = strings.TrimPrefix(path, "builtin:")
+		baseData, err = embeddedPrompts.ReadFile("prompts/_base.txt")
+		if err != nil {
+			return nil, fmt.Errorf("failed to read embedded base template: %w", err)
+		}
+		data, err = embeddedPrompts.ReadFile("prompts/" + name + ".txt")
+		if err != nil {
+			return nil, fmt.Errorf("failed to read embedded prompt %s: %w", name, err)
+		}
+	} else {
+		// Load from filesystem
+		name = path
+		baseData, err = os.ReadFile(filepath.Join(filepath.Dir(path), "_base.txt"))
+		if err != nil && !os.IsNotExist(err) {
+			return nil, fmt.Errorf("failed to read base template: %w", err)
+		}
+		data, err = os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read prompt file: %w", err)
+		}
 	}
 
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read prompt file: %w", err)
-	}
+	tmpl := template.New(name)
 
-	tmpl := template.New(path)
-
-	// Parse base template if it exists
+	// Parse base template if available
 	if len(baseData) > 0 {
 		if _, err := tmpl.Parse(string(baseData)); err != nil {
 			return nil, fmt.Errorf("failed to parse base template: %w", err)
 		}
 	}
 
-	// Parse the main template
-	if _, err := tmpl.Parse(string(data)); err != nil {
+	// Parse the main template content into a named template
+	mainTmpl, err := tmpl.New(name).Parse(string(data))
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse prompt template: %w", err)
 	}
 
-	return tmpl, nil
+	return mainTmpl, nil
 }
 
 // ExecutePrompt executes a prompt template with the given context

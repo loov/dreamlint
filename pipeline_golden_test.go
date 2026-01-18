@@ -78,8 +78,8 @@ func runPipelineGoldenTest(t *testing.T, txtarFile string) {
 			Enabled: false,
 		},
 		Analyses: []config.AnalysisPass{
-			{Name: "summary", Prompt: "prompts/summary.txt", Enabled: true},
-			{Name: passName, Prompt: fmt.Sprintf("prompts/%s.txt", passName), Enabled: true},
+			{Name: "summary", Prompt: "builtin:summary", Enabled: true},
+			{Name: passName, Prompt: "builtin:" + passName, Enabled: true},
 		},
 	}
 
