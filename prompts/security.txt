@@ -1,0 +1,73 @@
+You are performing a security audit of a Go function.
+
+{{if .Functions}}
+## Functions (mutually recursive group)
+{{range .Functions}}
+### {{.Name}}
+Signature: {{.Signature}}
+{{if .Godoc}}Documentation: {{.Godoc}}{{end}}
+
+```go
+{{.Body}}
+```
+{{end}}
+{{else}}
+## Function: {{.Name}}
+Package: {{.Package}}
+{{if .Receiver}}Receiver: {{.Receiver}}{{end}}
+Signature: {{.Signature}}
+{{if .Godoc}}Documentation: {{.Godoc}}{{end}}
+
+```go
+{{.Body}}
+```
+{{end}}
+
+{{if .Summary}}
+## Function Summary
+Purpose: {{.Summary.Purpose}}
+Behavior: {{.Summary.Behavior}}
+{{if .Summary.Security}}Security Notes:
+{{range .Summary.Security}}- {{.}}
+{{end}}{{end}}
+{{end}}
+
+{{if .Callees}}
+## Called Functions
+{{range .Callees}}
+### {{.Name}}
+Purpose: {{.Purpose}}
+Behavior: {{.Behavior}}
+{{if .Security}}Security: {{range .Security}}- {{.}}
+{{end}}{{end}}
+{{end}}
+{{end}}
+
+## Security Review Checklist
+Look for these vulnerability categories:
+- SQL Injection: Unparameterized queries, string concatenation in SQL
+- Command Injection: Shell commands with user input, exec calls
+- Path Traversal: File operations with user-controlled paths, missing sanitization
+- XSS: Unescaped output in HTML contexts
+- SSRF: User-controlled URLs in HTTP requests
+- Insecure Deserialization: Untrusted data in unmarshal calls
+- Hardcoded Secrets: API keys, passwords, tokens in code
+- Weak Cryptography: Insecure algorithms, weak random sources
+- Race Conditions: Unsynchronized access to shared state
+- Information Disclosure: Sensitive data in logs or errors
+
+Respond with JSON in this exact format:
+{
+  "issues": [
+    {
+      "severity": "high|medium|low",
+      "category": "vulnerability category",
+      "location": "line number or code snippet",
+      "description": "what the issue is",
+      "recommendation": "how to fix it"
+    }
+  ]
+}
+
+Only report actual security issues. If no issues found, return {"issues": []}.
+Be specific about locations and provide actionable recommendations.

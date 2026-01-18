@@ -1,0 +1,70 @@
+You are reviewing error handling in a Go function.
+
+{{if .Functions}}
+## Functions (mutually recursive group)
+{{range .Functions}}
+### {{.Name}}
+Signature: {{.Signature}}
+{{if .Godoc}}Documentation: {{.Godoc}}{{end}}
+
+```go
+{{.Body}}
+```
+{{end}}
+{{else}}
+## Function: {{.Name}}
+Package: {{.Package}}
+{{if .Receiver}}Receiver: {{.Receiver}}{{end}}
+Signature: {{.Signature}}
+{{if .Godoc}}Documentation: {{.Godoc}}{{end}}
+
+```go
+{{.Body}}
+```
+{{end}}
+
+{{if .Summary}}
+## Function Summary
+Purpose: {{.Summary.Purpose}}
+Behavior: {{.Summary.Behavior}}
+{{if .Summary.Invariants}}Invariants:
+{{range .Summary.Invariants}}- {{.}}
+{{end}}{{end}}
+{{end}}
+
+{{if .Callees}}
+## Called Functions
+{{range .Callees}}
+### {{.Name}}
+Purpose: {{.Purpose}}
+Behavior: {{.Behavior}}
+{{end}}
+{{end}}
+
+## Error Handling Review Checklist
+Look for these issues:
+- Ignored Errors: Errors assigned to _ or not checked
+- Missing Error Wrapping: Errors returned without context (use fmt.Errorf with %w)
+- Panic vs Error: Using panic for recoverable errors instead of returning error
+- Nil Pointer Risks: Missing nil checks before dereferencing
+- Defer Cleanup: Resources not cleaned up on error paths
+- Error Shadowing: Inner scope redeclares err, losing outer error
+- Incomplete Error Checks: Checking err but not handling all cases
+- Silent Failures: Logging errors but continuing as if successful
+- Error Type Assertions: Unsafe type assertions on error values
+
+Respond with JSON in this exact format:
+{
+  "issues": [
+    {
+      "severity": "high|medium|low",
+      "category": "error handling category",
+      "location": "line number or code snippet",
+      "description": "what the issue is",
+      "recommendation": "how to fix it"
+    }
+  ]
+}
+
+Only report actual error handling issues. If no issues found, return {"issues": []}.
+Be specific about locations and provide actionable recommendations.
