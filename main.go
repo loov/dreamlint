@@ -63,13 +63,18 @@ func run(configPath, format string, patterns []string) error {
 	fmt.Println("Building callgraph...")
 	graph := extract.BuildCallgraph(pkgs)
 
+	// Extract external function info
+	fmt.Println("Extracting external functions...")
+	externalFuncs := extract.ExtractExternalFuncs(pkgs, graph)
+	fmt.Printf("Found %d external functions\n", len(externalFuncs))
+
 	// Build analysis units
 	fmt.Println("Building analysis units...")
 	units := extract.BuildAnalysisUnits(funcs, graph)
 	fmt.Printf("Created %d analysis units\n", len(units))
 
 	// Create pipeline
-	pipeline := analyze.NewPipeline(cfg, c, client)
+	pipeline := analyze.NewPipeline(cfg, c, client, externalFuncs)
 	if err := pipeline.LoadPrompts(); err != nil {
 		return fmt.Errorf("load prompts: %w", err)
 	}

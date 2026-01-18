@@ -17,21 +17,23 @@ import (
 
 // Pipeline runs the analysis passes on all units
 type Pipeline struct {
-	config    *config.Config
-	cache     *cache.Cache
-	llmClient llm.Client
-	prompts   map[string]*template.Template
-	summaries map[string]*SummaryResponse
+	config        *config.Config
+	cache         *cache.Cache
+	llmClient     llm.Client
+	prompts       map[string]*template.Template
+	summaries     map[string]*SummaryResponse
+	externalFuncs map[string]*extract.ExternalFunc
 }
 
 // NewPipeline creates a new analysis pipeline
-func NewPipeline(cfg *config.Config, c *cache.Cache, client llm.Client) *Pipeline {
+func NewPipeline(cfg *config.Config, c *cache.Cache, client llm.Client, externalFuncs map[string]*extract.ExternalFunc) *Pipeline {
 	return &Pipeline{
-		config:    cfg,
-		cache:     c,
-		llmClient: client,
-		prompts:   make(map[string]*template.Template),
-		summaries: make(map[string]*SummaryResponse),
+		config:        cfg,
+		cache:         c,
+		llmClient:     client,
+		prompts:       make(map[string]*template.Template),
+		summaries:     make(map[string]*SummaryResponse),
+		externalFuncs: externalFuncs,
 	}
 }
 
@@ -162,7 +164,7 @@ func (p *Pipeline) buildPromptContext(unit *extract.AnalysisUnit, calleeSummarie
 		}
 	}
 
-	// Add callee summaries
+	// Add callee summaries for internal callees
 	for _, calleeID := range unit.Callees {
 		if summary, ok := calleeSummaries[calleeID]; ok {
 			ctx.Callees = append(ctx.Callees, CalleeSummary{
@@ -171,6 +173,18 @@ func (p *Pipeline) buildPromptContext(unit *extract.AnalysisUnit, calleeSummarie
 				Behavior:   summary.Behavior,
 				Invariants: summary.Invariants,
 				Security:   summary.Security,
+			})
+		}
+	}
+
+	// Add external function info
+	for _, calleeID := range unit.Callees {
+		if ext, ok := p.externalFuncs[calleeID]; ok {
+			ctx.ExternalFuncs = append(ctx.ExternalFuncs, ExternalFuncContext{
+				Package:   ext.Package,
+				Name:      ext.Name,
+				Signature: ext.Signature,
+				Godoc:     ext.Godoc,
 			})
 		}
 	}
