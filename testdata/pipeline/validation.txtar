@@ -8,12 +8,12 @@ You are analyzing a Go function to create a summary of its behavior.
 
 ## Function: Add
 Package: testpkg
-Signature: func Addfunc(a, b int) int
 Documentation: Add adds two numbers.
 
 
 ```go
-{
+// Add adds two numbers.
+func Add(a, b int) int {
 	return a + b
 }
 ```
@@ -35,12 +35,12 @@ You are reviewing Go code for input validation issues.
 
 ## Function: Add
 Package: testpkg
-Signature: func Addfunc(a, b int) int
 Documentation: Add adds two numbers.
 
 
 ```go
-{
+// Add adds two numbers.
+func Add(a, b int) int {
 	return a + b
 }
 ```

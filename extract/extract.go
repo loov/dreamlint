@@ -54,10 +54,10 @@ func ExtractFunctionsFromPackages(pkgs []*packages.Package) []*FunctionInfo {
 				// Extract signature
 				info.Signature = formatSignature(pkg.Fset, fn)
 
-				// Extract body
-				if fn.Body != nil {
+				// Extract full function declaration as body
+				{
 					var buf strings.Builder
-					printer.Fprint(&buf, pkg.Fset, fn.Body)
+					printer.Fprint(&buf, pkg.Fset, fn)
 					info.Body = buf.String()
 				}
 
@@ -85,7 +85,18 @@ func formatSignature(fset *token.FileSet, fn *ast.FuncDecl) string {
 	}
 
 	buf.WriteString(fn.Name.Name)
-	printer.Fprint(&buf, fset, fn.Type)
+	printer.Fprint(&buf, fset, fn.Type.Params)
+	if fn.Type.Results != nil {
+		results := fn.Type.Results
+		if len(results.List) == 1 && len(results.List[0].Names) == 0 {
+			// Single unnamed return value: no parens
+			buf.WriteString(" ")
+			printer.Fprint(&buf, fset, results.List[0].Type)
+		} else if len(results.List) > 0 {
+			buf.WriteString(" ")
+			printer.Fprint(&buf, fset, results)
+		}
+	}
 
 	return buf.String()
 }

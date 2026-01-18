@@ -4,7 +4,6 @@
 ## Functions (mutually recursive group)
 {{range .Functions}}
 ### {{.Name}}
-Signature: {{.Signature}}
 {{- if .Godoc}}
 Documentation: {{.Godoc}}
 {{- end}}
@@ -17,10 +16,6 @@ Documentation: {{.Godoc}}
 
 ## Function: {{.Name}}
 Package: {{.Package}}
-{{- if .Receiver}}
-Receiver: {{.Receiver}}
-{{- end}}
-Signature: {{.Signature}}
 {{- if .Godoc}}
 Documentation: {{.Godoc}}
 {{- end}}
