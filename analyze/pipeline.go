@@ -74,7 +74,7 @@ func (p *Pipeline) Analyze(ctx context.Context, unit *extract.AnalysisUnit, call
 		var err error
 		summary, err = p.runSummaryPass(ctx, promptCtx)
 		if err != nil {
-			return nil, fmt.Errorf("summary pass: %w", err)
+			return nil, fmt.Errorf("summary pass for %s: %w", unit.ID, err)
 		}
 		p.summaries[unit.ID] = summary
 
@@ -123,7 +123,7 @@ func (p *Pipeline) Analyze(ctx context.Context, unit *extract.AnalysisUnit, call
 
 		issues, err := p.runAnalysisPass(ctx, pass, promptCtx)
 		if err != nil {
-			return nil, fmt.Errorf("%s pass: %w", pass.Name, err)
+			return nil, fmt.Errorf("%s pass for %s: %w", pass.Name, unit.ID, err)
 		}
 
 		for _, issue := range issues {
