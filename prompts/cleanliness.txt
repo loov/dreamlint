@@ -48,11 +48,10 @@ Respond with JSON in this exact format:
 {
   "issues": [
     {
+      "line": <line number as integer>,
       "severity": "medium|low|info",
-      "category": "cleanliness category",
-      "location": "line number or code snippet",
-      "description": "what the issue is",
-      "recommendation": "how to improve it"
+      "message": "what the issue is",
+      "suggestion": "how to improve it"
     }
   ]
 }
@@ -60,3 +59,4 @@ Respond with JSON in this exact format:
 Only report actual cleanliness issues. If no issues found, return {"issues": []}.
 Use severity "info" for minor style suggestions, "low" for improvements, "medium" for maintainability concerns.
 Do NOT use "high" severity for cleanliness issues.
+Be specific about line numbers and provide actionable suggestions.

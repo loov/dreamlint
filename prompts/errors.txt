@@ -57,14 +57,13 @@ Respond with JSON in this exact format:
 {
   "issues": [
     {
+      "line": <line number as integer>,
       "severity": "high|medium|low",
-      "category": "error handling category",
-      "location": "line number or code snippet",
-      "description": "what the issue is",
-      "recommendation": "how to fix it"
+      "message": "what the issue is",
+      "suggestion": "how to fix it"
     }
   ]
 }
 
 Only report actual error handling issues. If no issues found, return {"issues": []}.
-Be specific about locations and provide actionable recommendations.
+Be specific about line numbers and provide actionable suggestions.
