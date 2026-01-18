@@ -68,10 +68,7 @@ func (c *OpenAIClient) Complete(ctx context.Context, req Request) (Response, err
 	}
 
 	for _, m := range req.Messages {
-		messages = append(messages, openAIMessage{
-			Role:    m.Role,
-			Content: m.Content,
-		})
+		messages = append(messages, openAIMessage(m))
 	}
 
 	oaiReq := openAIRequest{
