@@ -1,7 +1,4 @@
 // reviewmod.cue - Example configuration
-//
-// Minimal config - only LLM settings are required.
-// All analysis passes use builtin prompts by default.
 
 llm: {
 	provider:    "openai"
@@ -11,10 +8,28 @@ llm: {
 	temperature: 0.1
 }
 
-// Optional: customize which analyses to run
-// analyses: [
-// 	{name: "summary"},
-// 	{name: "security"},
-// 	{name: "testing", enabled: false},  // disable specific pass
-// 	{name: "custom", prompt: "path/to/custom.txt"},  // custom prompt
-// ]
+cache: {
+	dir:     ".reviewmod/cache"
+	enabled: true
+}
+
+output: {
+	json:     "reviewmod-report.json"
+	markdown: "reviewmod-report.md"
+}
+
+analyses: [
+	{name: "summary", prompt: "prompts/summary.txt"},
+	{name: "security", prompt: "prompts/security.txt"},
+	{name: "errors", prompt: "prompts/errors.txt"},
+	{name: "cleanliness", prompt: "prompts/cleanliness.txt"},
+	{name: "concurrency", prompt: "prompts/concurrency.txt"},
+	{name: "performance", prompt: "prompts/performance.txt"},
+	{name: "api-design", prompt: "prompts/api-design.txt"},
+	{name: "testing", prompt: "prompts/testing.txt"},
+	{name: "logging", prompt: "prompts/logging.txt"},
+	{name: "resources", prompt: "prompts/resources.txt"},
+	{name: "validation", prompt: "prompts/validation.txt"},
+	{name: "dependencies", prompt: "prompts/dependencies.txt"},
+	{name: "complexity", prompt: "prompts/complexity.txt"},
+]

@@ -8,21 +8,6 @@ import (
 	"testing"
 )
 
-func TestLoadPromptBuiltin(t *testing.T) {
-	// Test loading builtin prompts
-	for _, name := range DefaultAnalyses() {
-		t.Run(name, func(t *testing.T) {
-			tmpl, err := LoadPrompt("builtin:" + name)
-			if err != nil {
-				t.Fatalf("LoadPrompt(builtin:%s): %v", name, err)
-			}
-			if tmpl == nil {
-				t.Fatal("template is nil")
-			}
-		})
-	}
-}
-
 func TestLoadPrompt(t *testing.T) {
 	dir := t.TempDir()
 
