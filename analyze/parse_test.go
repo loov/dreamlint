@@ -31,7 +31,8 @@ func TestParseIssuesResponse(t *testing.T) {
 	response := `{
   "issues": [
     {
-      "line": 42,
+      "function": "GetUser",
+      "code": "query := \"SELECT * FROM users WHERE id=\" + id",
       "severity": "high",
       "message": "SQL query built with string concatenation",
       "suggestion": "Use parameterized query"
@@ -52,8 +53,12 @@ func TestParseIssuesResponse(t *testing.T) {
 		t.Errorf("severity = %q, want high", issues[0].Severity)
 	}
 
-	if issues[0].Line != 42 {
-		t.Errorf("line = %d, want 42", issues[0].Line)
+	if issues[0].Code != "query := \"SELECT * FROM users WHERE id=\" + id" {
+		t.Errorf("code = %q", issues[0].Code)
+	}
+
+	if issues[0].Function != "GetUser" {
+		t.Errorf("function = %q, want GetUser", issues[0].Function)
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"text/template"
 
 	"github.com/loov/reviewmod/cache"
@@ -54,7 +55,7 @@ func (p *Pipeline) LoadPrompts() error {
 // Analyze runs all analysis passes on a single unit
 func (p *Pipeline) Analyze(ctx context.Context, unit *extract.AnalysisUnit, calleeSummaries map[string]*SummaryResponse) (*report.UnitReport, error) {
 	// Build prompt context
-	promptCtx := p.buildPromptContext(unit, calleeSummaries)
+	promptCtx := p.BuildPromptContext(unit, calleeSummaries)
 
 	// Check cache for summary
 	cacheKey := p.cacheKey(unit, calleeSummaries)
@@ -132,12 +133,21 @@ func (p *Pipeline) Analyze(ctx context.Context, unit *extract.AnalysisUnit, call
 		}
 
 		for _, issue := range issues {
-			// Find the function's position to convert relative line to absolute
-			var pos = unit.Functions[0].Position // fallback to first function
-			if fn, ok := funcPositions[issue.Function]; ok {
-				pos = fn.Position
+			// Find the function's position and body to locate the code snippet
+			var fn *extract.FunctionInfo
+			if f, ok := funcPositions[issue.Function]; ok {
+				fn = &f
+			} else if len(unit.Functions) > 0 {
+				fn = unit.Functions[0]
 			}
-			pos.Line = pos.Line + issue.Line - 1
+
+			pos := fn.Position
+			// Find line number by matching the code snippet in the function body
+			if issue.Code != "" && fn != nil {
+				if line := findLineInBody(fn.Body, issue.Code); line > 0 {
+					pos.Line = pos.Line + line - 1
+				}
+			}
 
 			unitReport.Issues = append(unitReport.Issues, report.Issue{
 				Position:   pos,
@@ -152,7 +162,8 @@ func (p *Pipeline) Analyze(ctx context.Context, unit *extract.AnalysisUnit, call
 	return unitReport, nil
 }
 
-func (p *Pipeline) buildPromptContext(unit *extract.AnalysisUnit, calleeSummaries map[string]*SummaryResponse) PromptContext {
+
+func (p *Pipeline) BuildPromptContext(unit *extract.AnalysisUnit, calleeSummaries map[string]*SummaryResponse) PromptContext {
 	ctx := PromptContext{}
 
 	if len(unit.Functions) == 1 {
@@ -290,4 +301,37 @@ func (p *Pipeline) cacheKey(unit *extract.AnalysisUnit, calleeSummaries map[stri
 // GetSummary returns the summary for a unit
 func (p *Pipeline) GetSummary(unitID string) *SummaryResponse {
 	return p.summaries[unitID]
+}
+
+// findLineInBody finds the 1-based line number where the code snippet appears in the body.
+// Returns 0 if not found.
+func findLineInBody(body, code string) int {
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return 0
+	}
+
+	lines := strings.Split(body, "\n")
+	for i, line := range lines {
+		if strings.Contains(line, code) {
+			return i + 1
+		}
+		// Also try with trimmed line for flexibility
+		if strings.Contains(strings.TrimSpace(line), code) {
+			return i + 1
+		}
+	}
+
+	// Try to find a partial match if exact match fails
+	// This handles cases where the LLM might include slightly different whitespace
+	for i, line := range lines {
+		trimmedLine := strings.TrimSpace(line)
+		trimmedCode := strings.TrimSpace(code)
+		// Check if the code is a significant substring
+		if len(trimmedCode) > 10 && strings.Contains(trimmedLine, trimmedCode) {
+			return i + 1
+		}
+	}
+
+	return 0
 }

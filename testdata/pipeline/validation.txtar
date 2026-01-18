@@ -68,9 +68,9 @@ Look for:
 
 Only report actual validation issues. If no issues found, return {"issues": []}.
 
-Respond with JSON. The "line" field must be the line number within the code block above, where the first line of the code block is line 1.
+Respond with JSON. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
 
 Example:
-{"issues": [{"function": "ParseConfig", "line": 15, "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+{"issues": [{"function": "ParseConfig", "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
 
 If no issues found, return {"issues": []}.
