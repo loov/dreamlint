@@ -2,9 +2,9 @@
 
 llm: {
 	provider:    "openai"
-	base_url:    "http://localhost:8080/v1"
-	model:       "llama3"
-	max_tokens:  4096
+	base_url:    "http://localhost:1234/v1"
+	model:       "qwen/qwen3-next-80b"
+	max_tokens:  262144
 	temperature: 0.1
 }
 
