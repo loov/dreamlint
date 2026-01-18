@@ -1,0 +1,43 @@
+You are reviewing Go code for complexity issues.
+
+## Function: {{.Name}}
+Package: {{.Package}}
+Signature: {{.Signature}}
+
+```go
+{{.Body}}
+```
+
+{{if .Summary}}
+## Function Summary
+Purpose: {{.Summary.Purpose}}
+{{end}}
+
+Look for:
+- Functions longer than 50 lines
+- Cyclomatic complexity above 10 (many branches/loops)
+- Deeply nested code (more than 3 levels)
+- Functions with more than 5 parameters
+- Functions with more than 3 return values
+- Complex boolean expressions
+- Long switch statements that could be maps
+- Multiple responsibilities in one function
+- Complex control flow (goto, labeled breaks)
+- Functions that are hard to understand at a glance
+- God functions that do everything
+- Repeated similar code blocks (extract to helper)
+- Long parameter lists of same type (easy to swap)
+
+Respond with JSON:
+{
+  "issues": [
+    {
+      "line": <line number>,
+      "severity": "medium|low|info",
+      "message": "description of the complexity issue",
+      "suggestion": "how to simplify it"
+    }
+  ]
+}
+
+If no issues found, return {"issues": []}

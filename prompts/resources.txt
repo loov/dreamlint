@@ -1,0 +1,60 @@
+You are reviewing Go code for resource management issues.
+
+## Function: {{.Name}}
+Package: {{.Package}}
+Signature: {{.Signature}}
+
+```go
+{{.Body}}
+```
+
+{{if .Summary}}
+## Function Summary
+Purpose: {{.Summary.Purpose}}
+Behavior: {{.Summary.Behavior}}
+{{end}}
+
+{{if .Callees}}
+## Called Functions
+{{range .Callees}}
+### {{.Name}}
+Behavior: {{.Behavior}}
+{{end}}
+{{end}}
+
+{{if .ExternalFuncs}}
+## External Functions
+{{range .ExternalFuncs}}
+### {{.Package}}.{{.Name}}
+Signature: {{.Signature}}
+{{if .Godoc}}{{.Godoc}}{{end}}
+{{end}}
+{{end}}
+
+Look for:
+- Unclosed files, connections, or response bodies
+- Missing defer for cleanup operations
+- defer in loops (defers accumulate until function returns)
+- Context not passed to cancellable operations
+- Context cancellation not checked in long loops
+- Resources not released on error paths
+- Connection pools not configured or bounded
+- Missing timeouts on network operations
+- Unbounded queues or channels
+- Memory not released (holding references unnecessarily)
+- Temporary files not cleaned up
+- Database transactions not committed or rolled back
+
+Respond with JSON:
+{
+  "issues": [
+    {
+      "line": <line number>,
+      "severity": "high|medium|low",
+      "message": "description of the resource management issue",
+      "suggestion": "how to fix it"
+    }
+  ]
+}
+
+If no issues found, return {"issues": []}

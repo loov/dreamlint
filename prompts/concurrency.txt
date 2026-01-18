@@ -1,0 +1,60 @@
+You are reviewing Go code for concurrency issues.
+
+## Function: {{.Name}}
+Package: {{.Package}}
+Signature: {{.Signature}}
+
+```go
+{{.Body}}
+```
+
+{{if .Summary}}
+## Function Summary
+Purpose: {{.Summary.Purpose}}
+Behavior: {{.Summary.Behavior}}
+{{if .Summary.Invariants}}Invariants: {{range .Summary.Invariants}}- {{.}}
+{{end}}{{end}}
+{{end}}
+
+{{if .Callees}}
+## Called Functions
+{{range .Callees}}
+### {{.Name}}
+Behavior: {{.Behavior}}
+{{end}}
+{{end}}
+
+{{if .ExternalFuncs}}
+## External Functions
+{{range .ExternalFuncs}}
+### {{.Package}}.{{.Name}}
+Signature: {{.Signature}}
+{{if .Godoc}}{{.Godoc}}{{end}}
+{{end}}
+{{end}}
+
+Look for:
+- Race conditions on shared state without synchronization
+- Goroutine leaks (goroutines that never terminate)
+- Missing mutex locks or unlocks
+- Deadlock potential from lock ordering
+- Channel misuse (send on closed channel, nil channel operations)
+- Missing select default cases causing blocking
+- Improper use of sync.WaitGroup (Add after Wait, wrong count)
+- Context cancellation not checked in long operations
+- Shared state modified in goroutines without protection
+- sync.Mutex copied by value
+
+Respond with JSON:
+{
+  "issues": [
+    {
+      "line": <line number>,
+      "severity": "high|medium|low",
+      "message": "description of the concurrency issue",
+      "suggestion": "how to fix it"
+    }
+  ]
+}
+
+If no issues found, return {"issues": []}

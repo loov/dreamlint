@@ -1,0 +1,51 @@
+You are reviewing Go code for testability issues.
+
+## Function: {{.Name}}
+Package: {{.Package}}
+Signature: {{.Signature}}
+
+```go
+{{.Body}}
+```
+
+{{if .Summary}}
+## Function Summary
+Purpose: {{.Summary.Purpose}}
+Behavior: {{.Summary.Behavior}}
+{{end}}
+
+{{if .Callees}}
+## Called Functions
+{{range .Callees}}
+### {{.Name}}
+Behavior: {{.Behavior}}
+{{end}}
+{{end}}
+
+Look for:
+- Global state that makes testing difficult
+- Hardcoded dependencies (consider dependency injection)
+- Time.Now() calls (inject clock interface)
+- Direct file system access (inject fs interface)
+- Network calls without abstraction (inject client interface)
+- Random number generation without seed control
+- Functions that are impossible to unit test in isolation
+- Missing error paths that should be tested
+- Complex conditionals that need table-driven tests
+- Side effects mixed with pure computation
+- init() functions with complex logic
+- Package-level variables that hold state
+
+Respond with JSON:
+{
+  "issues": [
+    {
+      "line": <line number>,
+      "severity": "medium|low|info",
+      "message": "description of the testability issue",
+      "suggestion": "how to make it more testable"
+    }
+  ]
+}
+
+If no issues found, return {"issues": []}

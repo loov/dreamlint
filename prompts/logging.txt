@@ -1,0 +1,51 @@
+You are reviewing Go code for logging and observability issues.
+
+## Function: {{.Name}}
+Package: {{.Package}}
+Signature: {{.Signature}}
+
+```go
+{{.Body}}
+```
+
+{{if .Summary}}
+## Function Summary
+Purpose: {{.Summary.Purpose}}
+Behavior: {{.Summary.Behavior}}
+{{end}}
+
+{{if .Callees}}
+## Called Functions
+{{range .Callees}}
+### {{.Name}}
+Behavior: {{.Behavior}}
+{{end}}
+{{end}}
+
+Look for:
+- Errors logged without context (wrap with fmt.Errorf)
+- Inconsistent log levels (debug vs info vs warn)
+- Sensitive data in logs (passwords, tokens, PII)
+- Missing structured logging fields
+- Printf-style logging instead of structured logging
+- Missing request/trace IDs for correlation
+- Log messages that don't help debugging
+- Missing metrics for important operations
+- No logging on error paths
+- Excessive logging in hot paths (performance impact)
+- Swallowed errors (caught but not logged or returned)
+- Missing latency/duration tracking for operations
+
+Respond with JSON:
+{
+  "issues": [
+    {
+      "line": <line number>,
+      "severity": "high|medium|low",
+      "message": "description of the logging/observability issue",
+      "suggestion": "how to improve it"
+    }
+  ]
+}
+
+If no issues found, return {"issues": []}

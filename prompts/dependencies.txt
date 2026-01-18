@@ -1,0 +1,51 @@
+You are reviewing Go code for dependency usage issues.
+
+## Function: {{.Name}}
+Package: {{.Package}}
+Signature: {{.Signature}}
+
+```go
+{{.Body}}
+```
+
+{{if .Summary}}
+## Function Summary
+Purpose: {{.Summary.Purpose}}
+{{end}}
+
+{{if .ExternalFuncs}}
+## External Functions Used
+{{range .ExternalFuncs}}
+### {{.Package}}.{{.Name}}
+Signature: {{.Signature}}
+{{if .Godoc}}{{.Godoc}}{{end}}
+{{end}}
+{{end}}
+
+Look for:
+- Usage of deprecated functions or types
+- Functions marked as unsafe or experimental
+- Importing internal packages from external modules
+- Circular dependency potential
+- Heavy dependencies for simple operations
+- Vendor-specific code in generic packages
+- Platform-specific code without build tags
+- Importing test packages in non-test files
+- Using reflect when type-safe alternatives exist
+- Importing packages only for side effects without comment
+- Violations of intended package layering
+- Using cgo when pure Go alternatives exist
+
+Respond with JSON:
+{
+  "issues": [
+    {
+      "line": <line number>,
+      "severity": "high|medium|low",
+      "message": "description of the dependency issue",
+      "suggestion": "how to fix it"
+    }
+  ]
+}
+
+If no issues found, return {"issues": []}

@@ -1,0 +1,45 @@
+You are reviewing Go code for API design issues.
+
+## Function: {{.Name}}
+Package: {{.Package}}
+{{if .Receiver}}Receiver: {{.Receiver}}{{end}}
+Signature: {{.Signature}}
+{{if .Godoc}}Documentation: {{.Godoc}}{{end}}
+
+```go
+{{.Body}}
+```
+
+{{if .Summary}}
+## Function Summary
+Purpose: {{.Summary.Purpose}}
+Behavior: {{.Summary.Behavior}}
+{{end}}
+
+Look for:
+- Exported functions without documentation
+- Inconsistent naming (mixedCase vs under_score, abbreviations)
+- Too many parameters (consider options struct)
+- Returning concrete types instead of interfaces
+- Overly broad interfaces (accept interfaces, return structs)
+- Boolean parameters that reduce readability
+- Functions that do too many things (violate single responsibility)
+- Unclear return value semantics (when is error nil?)
+- Missing error types for distinguishable errors
+- Context not as first parameter when needed
+- Unexported types in exported function signatures
+- Stutter in names (package user with func UserNew)
+
+Respond with JSON:
+{
+  "issues": [
+    {
+      "line": <line number>,
+      "severity": "medium|low|info",
+      "message": "description of the API design issue",
+      "suggestion": "how to improve it"
+    }
+  ]
+}
+
+If no issues found, return {"issues": []}

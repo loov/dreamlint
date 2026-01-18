@@ -1,0 +1,55 @@
+You are reviewing Go code for input validation issues.
+
+## Function: {{.Name}}
+Package: {{.Package}}
+Signature: {{.Signature}}
+
+```go
+{{.Body}}
+```
+
+{{if .Summary}}
+## Function Summary
+Purpose: {{.Summary.Purpose}}
+Behavior: {{.Summary.Behavior}}
+{{if .Summary.Invariants}}Invariants: {{range .Summary.Invariants}}- {{.}}
+{{end}}{{end}}
+{{end}}
+
+{{if .Callees}}
+## Called Functions
+{{range .Callees}}
+### {{.Name}}
+Behavior: {{.Behavior}}
+{{if .Invariants}}Invariants: {{range .Invariants}}- {{.}}
+{{end}}{{end}}
+{{end}}
+{{end}}
+
+Look for:
+- Missing nil checks before dereferencing pointers
+- Missing length checks before slice/array access
+- Missing bounds validation on numeric inputs
+- Assumptions about string format without validation
+- Missing empty string checks
+- Integer overflow potential on arithmetic
+- Missing validation at API boundaries
+- Type assertions without ok check
+- Map access without existence check when needed
+- Slice capacity assumptions
+- Missing validation of external data (JSON, user input)
+- Trusting data from channels/callbacks without validation
+
+Respond with JSON:
+{
+  "issues": [
+    {
+      "line": <line number>,
+      "severity": "high|medium|low",
+      "message": "description of the validation issue",
+      "suggestion": "how to fix it"
+    }
+  ]
+}
+
+If no issues found, return {"issues": []}
