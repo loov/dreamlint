@@ -38,10 +38,16 @@ func ExtractFunctionsFromPackages(pkgs []*packages.Package) []*FunctionInfo {
 					continue
 				}
 
+				// Determine position of the function (or its doc comment if present)
+				startPos := fn.Pos()
+				if fn.Doc != nil {
+					startPos = fn.Doc.Pos()
+				}
+
 				info := &FunctionInfo{
 					Package:  pkg.PkgPath,
 					Name:     fn.Name.Name,
-					Position: pkg.Fset.Position(fn.Pos()),
+					Position: pkg.Fset.Position(startPos),
 				}
 
 				// Extract receiver
