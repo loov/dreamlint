@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"go/token"
 	"text/template"
 
 	"github.com/loov/reviewmod/cache"
@@ -115,6 +114,10 @@ func (p *Pipeline) Analyze(ctx context.Context, unit *extract.AnalysisUnit, call
 		Security:   summary.Security,
 	}
 
+	// Get base position for converting relative line numbers to absolute
+	// Use the first function's position as reference
+	basePos := unit.Functions[0].Position
+
 	// Run analysis passes
 	for _, pass := range p.config.Analyses {
 		if !pass.Enabled || pass.Name == "summary" {
@@ -127,8 +130,12 @@ func (p *Pipeline) Analyze(ctx context.Context, unit *extract.AnalysisUnit, call
 		}
 
 		for _, issue := range issues {
+			// Convert relative line number to absolute file position
+			pos := basePos
+			pos.Line = basePos.Line + issue.Line - 1
+
 			unitReport.Issues = append(unitReport.Issues, report.Issue{
-				Position:   token.Position{Line: issue.Line},
+				Position:   pos,
 				Severity:   report.Severity(issue.Severity),
 				Category:   pass.Name,
 				Message:    issue.Message,
