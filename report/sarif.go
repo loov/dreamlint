@@ -11,9 +11,9 @@ import (
 
 // SARIFReport is the root SARIF object
 type SARIFReport struct {
-	Schema  string      `json:"$schema"`
-	Version string      `json:"version"`
-	Runs    []SARIFRun  `json:"runs"`
+	Schema  string     `json:"$schema"`
+	Version string     `json:"version"`
+	Runs    []SARIFRun `json:"runs"`
 }
 
 // SARIFRun represents a single analysis run
@@ -29,26 +29,26 @@ type SARIFTool struct {
 
 // SARIFDriver describes the tool driver
 type SARIFDriver struct {
-	Name            string      `json:"name"`
-	Version         string      `json:"version"`
-	InformationURI  string      `json:"informationUri,omitempty"`
-	Rules           []SARIFRule `json:"rules,omitempty"`
+	Name           string      `json:"name"`
+	Version        string      `json:"version"`
+	InformationURI string      `json:"informationUri,omitempty"`
+	Rules          []SARIFRule `json:"rules,omitempty"`
 }
 
 // SARIFRule describes a rule/category
 type SARIFRule struct {
-	ID               string              `json:"id"`
-	Name             string              `json:"name"`
-	ShortDescription SARIFMessage        `json:"shortDescription"`
+	ID               string       `json:"id"`
+	Name             string       `json:"name"`
+	ShortDescription SARIFMessage `json:"shortDescription"`
 }
 
 // SARIFResult represents a single issue
 type SARIFResult struct {
-	RuleID    string           `json:"ruleId"`
-	Level     string           `json:"level"`
-	Message   SARIFMessage     `json:"message"`
-	Locations []SARIFLocation  `json:"locations,omitempty"`
-	Fixes     []SARIFFix       `json:"fixes,omitempty"`
+	RuleID    string          `json:"ruleId"`
+	Level     string          `json:"level"`
+	Message   SARIFMessage    `json:"message"`
+	Locations []SARIFLocation `json:"locations,omitempty"`
+	Fixes     []SARIFFix      `json:"fixes,omitempty"`
 }
 
 // SARIFMessage holds a text message
