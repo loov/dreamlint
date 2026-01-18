@@ -44,9 +44,13 @@ var IssuesSchema = &llm.JSONSchema{
 				"items": map[string]any{
 					"type": "object",
 					"properties": map[string]any{
+						"function": map[string]any{
+							"type":        "string",
+							"description": "Name of the function where the issue occurs",
+						},
 						"line": map[string]any{
 							"type":        "integer",
-							"description": "Line number where the issue occurs",
+							"description": "Line number within the function where the issue occurs",
 						},
 						"severity": map[string]any{
 							"type":        "string",
@@ -62,7 +66,7 @@ var IssuesSchema = &llm.JSONSchema{
 							"description": "Suggested fix for the issue",
 						},
 					},
-					"required":             []string{"line", "severity", "message"},
+					"required":             []string{"function", "line", "severity", "message"},
 					"additionalProperties": false,
 				},
 			},

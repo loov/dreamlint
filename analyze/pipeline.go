@@ -114,9 +114,11 @@ func (p *Pipeline) Analyze(ctx context.Context, unit *extract.AnalysisUnit, call
 		Security:   summary.Security,
 	}
 
-	// Get base position for converting relative line numbers to absolute
-	// Use the first function's position as reference
-	basePos := unit.Functions[0].Position
+	// Build function position lookup for converting relative line numbers
+	funcPositions := make(map[string]extract.FunctionInfo)
+	for _, fn := range unit.Functions {
+		funcPositions[fn.Name] = *fn
+	}
 
 	// Run analysis passes
 	for _, pass := range p.config.Analyses {
@@ -130,9 +132,12 @@ func (p *Pipeline) Analyze(ctx context.Context, unit *extract.AnalysisUnit, call
 		}
 
 		for _, issue := range issues {
-			// Convert relative line number to absolute file position
-			pos := basePos
-			pos.Line = basePos.Line + issue.Line - 1
+			// Find the function's position to convert relative line to absolute
+			var pos = unit.Functions[0].Position // fallback to first function
+			if fn, ok := funcPositions[issue.Function]; ok {
+				pos = fn.Position
+			}
+			pos.Line = pos.Line + issue.Line - 1
 
 			unitReport.Issues = append(unitReport.Issues, report.Issue{
 				Position:   pos,
