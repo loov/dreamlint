@@ -29,6 +29,10 @@ Flags:
 -prompts string   directory to load prompts from (overrides builtin prompts)
 ```
 
+## Prompts
+
+To write custom prompts see the builtin prompts in [analyze/prompts](analyze/prompts).
+
 ## Configuration
 
 Create a [`dreamlint.cue`](dreamlint.cue) file in your project root.
@@ -42,7 +46,3 @@ dreamlint extracts all functions from the specified packages and builds a callgr
 For each analysis unit, dreamlint first generates a summary describing the function's purpose, behavior, invariants, and security properties. This summary is cached and passed to callers during their analysis. Then it runs each configured analysis pass (security, error handling, cleanliness) and collects issues.
 
 Results are written as JSON for programmatic consumption, Markdown for human review, and SARIF for integration with code analysis tools.
-
-## License
-
-MIT
