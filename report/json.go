@@ -19,3 +19,26 @@ func WriteJSONFile(r *Report, path string) error {
 	}
 	return os.WriteFile(path, data, 0644)
 }
+
+// ReadJSONFile reads a report from a JSON file
+func ReadJSONFile(path string) (*Report, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var r Report
+	if err := json.Unmarshal(data, &r); err != nil {
+		return nil, err
+	}
+	// Ensure maps are initialized
+	if r.Units == nil {
+		r.Units = make(map[string]UnitReport)
+	}
+	if r.Summary.BySeverity == nil {
+		r.Summary.BySeverity = make(map[string]int)
+	}
+	if r.Summary.ByCategory == nil {
+		r.Summary.ByCategory = make(map[string]int)
+	}
+	return &r, nil
+}

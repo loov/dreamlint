@@ -3,9 +3,11 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/loov/reviewmod/analyze"
@@ -19,6 +21,7 @@ import (
 func main() {
 	configPath := flag.String("config", "reviewmod.cue", "path to config file")
 	format := flag.String("format", "both", "output format: json, markdown, or both")
+	resume := flag.Bool("resume", false, "resume from existing partial report")
 	flag.Parse()
 
 	patterns := flag.Args()
@@ -26,12 +29,12 @@ func main() {
 		patterns = []string{"./..."}
 	}
 
-	if err := run(*configPath, *format, patterns); err != nil {
+	if err := run(*configPath, *format, *resume, patterns); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run(configPath, format string, patterns []string) error {
+func run(configPath, format string, resume bool, patterns []string) error {
 	// Load config
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
@@ -79,26 +82,69 @@ func run(configPath, format string, patterns []string) error {
 		return fmt.Errorf("load prompts: %w", err)
 	}
 
-	// Create report
-	rpt := report.NewReport()
-	rpt.Metadata.Modules = patterns
-	rpt.Metadata.ConfigFile = configPath
-	rpt.Metadata.TotalUnits = len(units)
-	rpt.Metadata.GeneratedAt = time.Now()
+	// Load or create report
+	var rpt *report.Report
+	if resume {
+		rpt, err = report.ReadJSONFile(cfg.Output.JSON)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				fmt.Println("No existing report found, starting fresh")
+				rpt = nil
+			} else {
+				return fmt.Errorf("load existing report: %w", err)
+			}
+		} else {
+			fmt.Printf("Resuming from existing report with %d units already analyzed\n", len(rpt.Units))
+		}
+	}
+
+	if rpt == nil {
+		rpt = report.NewReport()
+		rpt.Metadata.Modules = patterns
+		rpt.Metadata.ConfigFile = configPath
+		rpt.Metadata.TotalUnits = len(units)
+		rpt.Metadata.GeneratedAt = time.Now()
+	}
 
 	// Analyze each unit in order
 	ctx := context.Background()
 	calleeSummaries := make(map[string]*analyze.SummaryResponse)
 
+	// Rebuild callee summaries from existing report for resumption
+	for unitID, unitReport := range rpt.Units {
+		calleeSummaries[unitID] = &analyze.SummaryResponse{
+			Purpose:    unitReport.Summary.Purpose,
+			Behavior:   unitReport.Summary.Behavior,
+			Invariants: unitReport.Summary.Invariants,
+			Security:   unitReport.Summary.Security,
+		}
+	}
+
+	skipped := 0
+	analyzed := 0
+	var lastErr error
+
 	for i, unit := range units {
+		// Skip already analyzed units
+		if _, exists := rpt.Units[unit.ID]; exists {
+			skipped++
+			continue
+		}
+
 		fmt.Printf("Analyzing %d/%d: %s\n", i+1, len(units), unit.ID)
 
 		unitReport, err := pipeline.Analyze(ctx, unit, calleeSummaries)
 		if err != nil {
-			return fmt.Errorf("analyze %s: %w", unit.ID, err)
+			lastErr = fmt.Errorf("analyze %s: %w", unit.ID, err)
+			fmt.Printf("Error: %v\n", lastErr)
+			fmt.Println("Saving progress...")
+			saveProgress(rpt, cfg, format)
+			fmt.Printf("Progress saved. Run with -resume to continue.\n")
+			return lastErr
 		}
 
 		rpt.Units[unit.ID] = *unitReport
+		analyzed++
 
 		// Store summary for callers
 		if summary := pipeline.GetSummary(unit.ID); summary != nil {
@@ -124,9 +170,18 @@ func run(configPath, format string, patterns []string) error {
 				}
 			}
 		}
+
+		// Save progress periodically (every 10 units)
+		if analyzed%10 == 0 {
+			saveProgress(rpt, cfg, format)
+		}
 	}
 
-	// Write output
+	if skipped > 0 {
+		fmt.Printf("Skipped %d already analyzed units\n", skipped)
+	}
+
+	// Write final output
 	if format == "json" || format == "both" {
 		if err := report.WriteJSONFile(rpt, cfg.Output.JSON); err != nil {
 			return fmt.Errorf("write json: %w", err)
@@ -148,4 +203,17 @@ func run(configPath, format string, patterns []string) error {
 	}
 
 	return nil
+}
+
+func saveProgress(rpt *report.Report, cfg *config.Config, format string) {
+	if format == "json" || format == "both" {
+		if err := report.WriteJSONFile(rpt, cfg.Output.JSON); err != nil {
+			fmt.Printf("Warning: failed to save progress: %v\n", err)
+		}
+	}
+	if format == "markdown" || format == "both" {
+		if err := report.WriteMarkdownFile(rpt, cfg.Output.Markdown); err != nil {
+			fmt.Printf("Warning: failed to save markdown: %v\n", err)
+		}
+	}
 }
