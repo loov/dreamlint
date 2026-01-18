@@ -22,14 +22,16 @@ Flags:
 
 ```
 -config string    path to config file (default "reviewmod.cue")
--format string    output format: json, markdown, or both (default "both")
+-format string    output format: json, markdown, sarif, or all (default "all")
+-resume           resume from existing partial report
+-prompts string   directory to load prompts from (overrides builtin prompts)
 ```
 
 ## Configuration
 
 Create a [`reviewmod.cue`](reviewmod.cue) file in your project root.
 
-Each analysis pass can specify its own LLM configuration to use different models for different tasks. See [`config/schema.cue`](config/schema.cue) for details for the format.
+Each analysis pass can specify its own LLM configuration to use different models for different tasks. See [`config/schema.cue`](config/schema.cue) for details about configuration.
 
 ## How It Works
 
@@ -37,7 +39,7 @@ reviewmod extracts all functions from the specified packages and builds a callgr
 
 For each analysis unit, reviewmod first generates a summary describing the function's purpose, behavior, invariants, and security properties. This summary is cached and passed to callers during their analysis. Then it runs each configured analysis pass (security, error handling, cleanliness) and collects issues.
 
-Results are written as JSON for programmatic consumption and Markdown for human review.
+Results are written as JSON for programmatic consumption, Markdown for human review, and SARIF for integration with code analysis tools.
 
 ## License
 

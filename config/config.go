@@ -50,7 +50,6 @@ type AnalysisPass struct {
 	Prompt                    string     `json:"prompt"`
 	Enabled                   bool       `json:"enabled"`
 	LLM                       *LLMConfig `json:"llm,omitempty"`
-	IncludeSecurityProperties bool       `json:"include_security_properties,omitempty"`
 }
 
 // LoadConfig loads and validates a Cue configuration file
