@@ -225,7 +225,7 @@ func run(configPath, format string, resume bool, promptsDir string, patterns []s
 	}
 
 	// Write final output
-	if err := writeReport(rpt, cfg, format); err != nil {
+	if err := writeReport(rpt, cfg, format, true); err != nil {
 		return err
 	}
 
@@ -238,30 +238,36 @@ func run(configPath, format string, resume bool, promptsDir string, patterns []s
 	return nil
 }
 
-func writeReport(rpt *report.Report, cfg *config.Config, format string) error {
+func writeReport(rpt *report.Report, cfg *config.Config, format string, final bool) error {
 	if format == "json" || format == "all" {
 		if err := report.WriteJSONFile(rpt, cfg.Output.JSON); err != nil {
 			return fmt.Errorf("write json: %w", err)
 		}
-		fmt.Printf("Wrote %s\n", cfg.Output.JSON)
+		if final {
+			fmt.Printf("Wrote %s\n", cfg.Output.JSON)
+		}
 	}
 	if format == "markdown" || format == "all" {
 		if err := report.WriteMarkdownFile(rpt, cfg.Output.Markdown); err != nil {
 			return fmt.Errorf("write markdown: %w", err)
 		}
-		fmt.Printf("Wrote %s\n", cfg.Output.Markdown)
+		if final {
+			fmt.Printf("Wrote %s\n", cfg.Output.Markdown)
+		}
 	}
 	if format == "sarif" || format == "all" {
 		if err := report.WriteSARIFFile(rpt, cfg.Output.SARIF); err != nil {
 			return fmt.Errorf("write sarif: %w", err)
 		}
-		fmt.Printf("Wrote %s\n", cfg.Output.SARIF)
+		if final {
+			fmt.Printf("Wrote %s\n", cfg.Output.SARIF)
+		}
 	}
 	return nil
 }
 
 func saveProgress(rpt *report.Report, cfg *config.Config, format string) {
-	if err := writeReport(rpt, cfg, format); err != nil {
+	if err := writeReport(rpt, cfg, format, false); err != nil {
 		fmt.Printf("Warning: failed to save progress: %v\n", err)
 	}
 }

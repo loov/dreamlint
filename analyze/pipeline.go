@@ -215,7 +215,6 @@ func (p *Pipeline) Analyze(ctx context.Context, unit *extract.AnalysisUnit, call
 	return unitReport, nil
 }
 
-
 func (p *Pipeline) BuildPromptContext(unit *extract.AnalysisUnit, calleeSummaries map[string]*SummaryResponse) PromptContext {
 	ctx := PromptContext{}
 
