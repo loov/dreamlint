@@ -16,6 +16,7 @@ type SummaryResponse struct {
 // IssueResponse is a single issue from the LLM
 type IssueResponse struct {
 	Function   string `json:"function"`
+	Line       int    `json:"line"`
 	Code       string `json:"code"`
 	Severity   string `json:"severity"`
 	Message    string `json:"message"`

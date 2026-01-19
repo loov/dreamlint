@@ -77,10 +77,10 @@ Signature: {{.Signature}}
 
 {{- define "issues-format"}}
 
-Respond with JSON. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
 
 Example:
-{"issues": [{"function": "ParseConfig", "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
 
 If no issues found, return {"issues": []}.
 {{- end}}

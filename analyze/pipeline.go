@@ -194,11 +194,19 @@ func (p *Pipeline) Analyze(ctx context.Context, unit *extract.AnalysisUnit, call
 			}
 
 			pos := fn.Position
-			// Find line number by matching the code snippet in the function body
+			// Find line by matching code snippet, using LLM's line as hint
 			if issue.Code != "" && fn != nil {
-				if line := findLineInBody(fn.Body, issue.Code); line > 0 {
+				// Convert absolute line hint to relative line within function body
+				hintLine := 0
+				if issue.Line > 0 {
+					hintLine = issue.Line - pos.Line + 1
+				}
+				if line := findLineInBody(fn.Body, issue.Code, hintLine); line > 0 {
 					pos.Line = pos.Line + line - 1
 				}
+			} else if issue.Line > 0 {
+				// Fallback to LLM line if no code snippet provided
+				pos.Line = pos.Line + issue.Line - 1
 			}
 
 			unitReport.Issues = append(unitReport.Issues, report.Issue{
@@ -356,33 +364,61 @@ func (p *Pipeline) GetSummary(unitID string) *SummaryResponse {
 
 // findLineInBody finds the 1-based line number where the code snippet appears in the body.
 // Returns 0 if not found.
-func findLineInBody(body, code string) int {
+// findLineInBody searches for code in body, preferring matches closest to hintLine.
+// hintLine is the line number within the body (1-indexed), or 0 if no hint.
+func findLineInBody(body, code string, hintLine int) int {
 	code = strings.TrimSpace(code)
 	if code == "" {
 		return 0
 	}
 
 	lines := strings.Split(body, "\n")
+
+	// Collect all matching line numbers
+	var matches []int
 	for i, line := range lines {
-		if strings.Contains(line, code) {
-			return i + 1
-		}
-		// Also try with trimmed line for flexibility
-		if strings.Contains(strings.TrimSpace(line), code) {
-			return i + 1
+		if strings.Contains(line, code) || strings.Contains(strings.TrimSpace(line), code) {
+			matches = append(matches, i+1)
 		}
 	}
 
-	// Try to find a partial match if exact match fails
-	// This handles cases where the LLM might include slightly different whitespace
-	for i, line := range lines {
-		trimmedLine := strings.TrimSpace(line)
+	// Try partial match if no exact matches
+	if len(matches) == 0 {
 		trimmedCode := strings.TrimSpace(code)
-		// Check if the code is a significant substring
-		if len(trimmedCode) > 10 && strings.Contains(trimmedLine, trimmedCode) {
-			return i + 1
+		if len(trimmedCode) > 10 {
+			for i, line := range lines {
+				if strings.Contains(strings.TrimSpace(line), trimmedCode) {
+					matches = append(matches, i+1)
+				}
+			}
 		}
 	}
 
-	return 0
+	if len(matches) == 0 {
+		// If no matches found, return hint line.
+		return hintLine
+	}
+
+	// If no hint or single match, return first match
+	if hintLine <= 0 || len(matches) == 1 {
+		return matches[0]
+	}
+
+	// Find match closest to hint
+	best := matches[0]
+	bestDist := abs(best - hintLine)
+	for _, m := range matches[1:] {
+		if dist := abs(m - hintLine); dist < bestDist {
+			best = m
+			bestDist = dist
+		}
+	}
+	return best
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }

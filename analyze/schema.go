@@ -47,6 +47,10 @@ var IssuesSchema = &llm.JSONSchema{
 							"type":        "string",
 							"description": "Name of the function where the issue occurs",
 						},
+						"line": map[string]any{
+							"type":        "integer",
+							"description": "Line number where the issue occurs",
+						},
 						"code": map[string]any{
 							"type":        "string",
 							"description": "The exact line of code where the issue occurs, copied verbatim from the code block",
@@ -65,7 +69,7 @@ var IssuesSchema = &llm.JSONSchema{
 							"description": "Suggested fix for the issue",
 						},
 					},
-					"required":             []string{"function", "code", "severity", "message"},
+					"required":             []string{"function", "line", "code", "severity", "message"},
 					"additionalProperties": false,
 				},
 			},

@@ -50,7 +50,7 @@ func TestExecutePrompt(t *testing.T) {
 		t.Errorf("result should contain function name")
 	}
 
-	if !strings.Contains(result, "main") {
-		t.Errorf("result should contain package name")
+	if !strings.Contains(result, "func Hello(name string) string") {
+		t.Errorf("result should contain function body")
 	}
 }
