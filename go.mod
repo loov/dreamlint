@@ -18,6 +18,8 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/protocolbuffers/txtpbfmt v0.0.0-20251016062345-16587c79cd91 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
+	github.com/zeebo/clingy v0.0.0-20250609200504-bc547d5f79c0 // indirect
+	github.com/zeebo/errs/v2 v2.0.3 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/mod v0.32.0 // indirect
 	golang.org/x/net v0.49.0 // indirect

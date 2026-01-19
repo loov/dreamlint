@@ -4,11 +4,11 @@ package main
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
-	"log"
 	"os"
 	"time"
+
+	"github.com/zeebo/clingy"
 
 	"github.com/loov/dreamlint/analyze"
 	"github.com/loov/dreamlint/cache"
@@ -21,27 +21,15 @@ import (
 )
 
 func main() {
-	var configPaths stringSlice
-	var inlineConfigs stringSlice
-	flag.Var(&configPaths, "config", "path to config file (can be specified multiple times)")
-	flag.Var(&inlineConfigs, "c", "inline CUE config (can be specified multiple times)")
-	format := flag.String("format", "all", "output format: json, markdown, sarif, or all")
-	resume := flag.Bool("resume", false, "resume from existing partial report")
-	promptsDir := flag.String("prompts", "", "directory to load prompts from (overrides builtin prompts)")
-	flag.Parse()
-
-	// Default to dreamlint.cue if no config specified
-	if len(configPaths) == 0 {
-		configPaths = []string{"dreamlint.cue"}
+	ctx := context.Background()
+	ok, err := clingy.Environment{}.Run(ctx, func(cmds clingy.Commands) {
+		cmds.New("run", "analyze packages for issues", new(cmdRun))
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 	}
-
-	patterns := flag.Args()
-	if len(patterns) == 0 {
-		patterns = []string{"./..."}
-	}
-
-	if err := run(configPaths, inlineConfigs, *format, *resume, *promptsDir, patterns); err != nil {
-		log.Fatal(err)
+	if !ok || err != nil {
+		os.Exit(1)
 	}
 }
 

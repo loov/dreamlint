@@ -15,7 +15,7 @@ go install github.com/loov/dreamlint@latest
 ## Usage
 
 ```
-dreamlint [flags] [packages...]
+dreamlint run [flags] [packages...]
 ```
 
 By default, dreamlint analyzes all packages in the current module using the configuration in `dreamlint.cue`.
