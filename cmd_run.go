@@ -60,11 +60,6 @@ func (c *cmdRun) Execute(ctx context.Context) error {
 		patterns = []string{"./..."}
 	}
 
-	// workaround for clingy bug
-	if len(c.configPaths) == 0 {
-		c.configPaths = []string{"dreamlint.cue"}
-	}
-
 	return run(c.configPaths, c.inlineConfigs, c.format, c.resume, c.promptsDir, patterns)
 }
 
