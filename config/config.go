@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"cuelang.org/go/cue"
-	"cuelang.org/go/cue/build"
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/load"
 )
@@ -101,13 +100,8 @@ func LoadConfig(paths []string, inlineConfigs []string) (*Config, error) {
 		return nil, fmt.Errorf("no instances loaded")
 	}
 
-	inst := instances[0]
-	if inst.Err != nil {
-		return nil, fmt.Errorf("load config: %w", inst.Err)
-	}
-
 	// Build the instance
-	values, err := ctx.BuildInstances([]*build.Instance{inst})
+	values, err := ctx.BuildInstances(instances)
 	if err != nil {
 		return nil, fmt.Errorf("build config: %w", err)
 	}
