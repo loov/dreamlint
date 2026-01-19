@@ -7,7 +7,9 @@ import (
 	"os"
 
 	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/build"
 	"cuelang.org/go/cue/cuecontext"
+	"cuelang.org/go/cue/load"
 )
 
 //go:embed schema.cue
@@ -64,40 +66,59 @@ func LoadConfig(paths []string, inlineConfigs []string) (*Config, error) {
 
 	schema := schemaVal.LookupPath(cue.ParsePath("#Config"))
 
-	unified := schema
+	// Build overlay with all config files to compile them together
+	overlay := make(map[string]load.Source)
 
-	// Load each config file
-	for _, path := range paths {
+	// Add schema to overlay
+	overlay["/schema.cue"] = load.FromString(schemaCue)
+
+	// Read and add all config files to overlay
+	for i, path := range paths {
 		data, err := os.ReadFile(path)
 		if err != nil {
 			return nil, fmt.Errorf("read config %s: %w", path, err)
 		}
-
-		val := ctx.CompileBytes(data)
-		if val.Err() != nil {
-			return nil, fmt.Errorf("compile config %s: %w", path, val.Err())
-		}
-
-		unified = unified.Unify(val)
-		if unified.Err() != nil {
-			return nil, fmt.Errorf("unify config %s: %w", path, unified.Err())
-		}
+		// Use virtual paths to avoid filesystem dependencies
+		virtualPath := fmt.Sprintf("/config_%d.cue", i)
+		overlay[virtualPath] = load.FromBytes(data)
 	}
 
-	// Load each inline config
-	for _, inline := range inlineConfigs {
-		val := ctx.CompileString(inline)
-		if val.Err() != nil {
-			return nil, fmt.Errorf("compile inline config %q: %w", inline, val.Err())
-		}
-
-		unified = unified.Unify(val)
-		if unified.Err() != nil {
-			return nil, fmt.Errorf("unify inline config %q: %w", inline, unified.Err())
-		}
+	// Add inline configs to overlay
+	for i, inline := range inlineConfigs {
+		prefixed := "package config\n" + inline
+		virtualPath := fmt.Sprintf("/inline_%d.cue", i)
+		overlay[virtualPath] = load.FromString(prefixed)
 	}
 
-	// Decode each source to a partial config and merge
+	// Load all files together as a single instance
+	cfg_load := &load.Config{
+		Dir:     "/",
+		Overlay: overlay,
+		Package: "config",
+	}
+
+	instances := load.Instances([]string{"."}, cfg_load)
+	if len(instances) == 0 {
+		return nil, fmt.Errorf("no instances loaded")
+	}
+
+	inst := instances[0]
+	if inst.Err != nil {
+		return nil, fmt.Errorf("load config: %w", inst.Err)
+	}
+
+	// Build the instance
+	values, err := ctx.BuildInstances([]*build.Instance{inst})
+	if err != nil {
+		return nil, fmt.Errorf("build config: %w", err)
+	}
+
+	unified := schema.Unify(values[0])
+	if unified.Err() != nil {
+		return nil, fmt.Errorf("unify config with schema: %w", unified.Err())
+	}
+
+	// Decode to config struct
 	var cfg Config
 	if err := unified.Decode(&cfg); err != nil {
 		return nil, fmt.Errorf("decode config: %w", err)

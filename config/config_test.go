@@ -27,6 +27,79 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
+func TestLoadConfig_Auto(t *testing.T) {
+	cfg, err := LoadConfig([]string{"./testdata/auto.cue"}, nil)
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+
+	if cfg.LLM.Provider != "openai" {
+		t.Errorf("provider = %s, want openai", cfg.LLM.Provider)
+	}
+	if cfg.LLM.Model != "llama3" {
+		t.Errorf("model = %s, want llama3", cfg.LLM.Model)
+	}
+
+	// Check defaults
+	if cfg.Cache.Dir != ".dreamlint/cache" {
+		t.Errorf("cache.dir = %s, want .dreamlint/cache", cfg.Cache.Dir)
+	}
+	if len(cfg.Analyse) != 2 {
+		t.Errorf("analyses count = %d, want 2", len(cfg.Analyse))
+	}
+}
+
+
+func TestLoadConfig_Auto_Specify(t *testing.T) {
+	cfg, err := LoadConfig([]string{"./testdata/auto.cue", "./testdata/auto.cue"},
+		[]string{
+			"analyse: [pass.security]",
+		})
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+
+	if cfg.LLM.Provider != "openai" {
+		t.Errorf("provider = %s, want openai", cfg.LLM.Provider)
+	}
+	if cfg.LLM.Model != "llama3" {
+		t.Errorf("model = %s, want llama3", cfg.LLM.Model)
+	}
+
+	// Check defaults
+	if cfg.Cache.Dir != ".dreamlint/cache" {
+		t.Errorf("cache.dir = %s, want .dreamlint/cache", cfg.Cache.Dir)
+	}
+	if len(cfg.Analyse) != 1 {
+		t.Errorf("analyses count = %d, want 1", len(cfg.Analyse))
+	}
+}
+
+func TestLoadConfig_Auto_SpecifyInline(t *testing.T) {
+	cfg, err := LoadConfig([]string{"./testdata/auto.cue"},
+		[]string{
+			"analyse: [pass.security]",
+		})
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+
+	if cfg.LLM.Provider != "openai" {
+		t.Errorf("provider = %s, want openai", cfg.LLM.Provider)
+	}
+	if cfg.LLM.Model != "llama3" {
+		t.Errorf("model = %s, want llama3", cfg.LLM.Model)
+	}
+
+	// Check defaults
+	if cfg.Cache.Dir != ".dreamlint/cache" {
+		t.Errorf("cache.dir = %s, want .dreamlint/cache", cfg.Cache.Dir)
+	}
+	if len(cfg.Analyse) != 1 {
+		t.Errorf("analyses count = %d, want 1", len(cfg.Analyse))
+	}
+}
+
 func TestLoadConfigMultipleFiles(t *testing.T) {
 	cfg, err := LoadConfig([]string{
 		"./testdata/base.cue",

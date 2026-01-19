@@ -43,5 +43,9 @@ package config
 		markdown: string | *"dreamlint-report.md"
 		sarif:    string | *"dreamlint-report.sarif"
 	}
-	analyse: [...#AnalysisPass]
+
+	// pass allows definining set of passes that will be all loaded.
+	pass: [Name=string]: {{#AnalysisPass} & {name: Name}}
+	// analyse specifies which passes to run.
+	analyse: [...#AnalysisPass] | *[for k, v in pass { {v} }]
 }
