@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/mattn/go-isatty"
 	"github.com/zeebo/clingy"
 
 	"github.com/loov/dreamlint/analyze"
@@ -65,6 +66,24 @@ func (c *cmdRun) Execute(ctx context.Context) error {
 	}
 
 	return run(c.configPaths, c.inlineConfigs, c.format, c.resume, c.promptsDir, patterns)
+}
+
+// isTTY reports whether stdout is a terminal.
+var isTTY = isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd())
+
+// clearLine clears the current line if stdout is a terminal.
+func clearLine() {
+	if isTTY {
+		fmt.Print("\r\033[K")
+	}
+}
+
+// printProgress prints a progress message, overwriting the current line if stdout is a terminal.
+func printProgress(format string, args ...any) {
+	if isTTY {
+		fmt.Print("\r\033[K")
+		fmt.Printf(format, args...)
+	}
 }
 
 func run(configPaths, inlineConfigs []string, format string, resume bool, promptsDir string, patterns []string) error {
@@ -168,23 +187,25 @@ func run(configPaths, inlineConfigs []string, format string, resume bool, prompt
 	pipeline.OnProgress(func(event analyze.ProgressEvent) {
 		if event.Phase != currentPhase {
 			currentPhase = event.Phase
-			fmt.Printf("\r\033[K    → %s", currentPhase)
+			printProgress("    → %s", currentPhase)
 		}
 		if event.IssueFound != nil {
 			issuesBySeverity[event.IssueFound.Severity]++
 			// Show running tally
-			fmt.Printf("\r\033[K    → %s [", currentPhase)
-			first := true
-			for _, sev := range []string{"critical", "important", "minor"} {
-				if count := issuesBySeverity[sev]; count > 0 {
-					if !first {
-						fmt.Print(" ")
+			if isTTY {
+				fmt.Print("\r\033[K    → ", currentPhase, " [")
+				first := true
+				for _, sev := range []string{"critical", "important", "minor"} {
+					if count := issuesBySeverity[sev]; count > 0 {
+						if !first {
+							fmt.Print(" ")
+						}
+						fmt.Printf("%s:%d", sev, count)
+						first = false
 					}
-					fmt.Printf("%s:%d", sev, count)
-					first = false
 				}
+				fmt.Print("]")
 			}
-			fmt.Print("]")
 		}
 	})
 
@@ -202,7 +223,7 @@ func run(configPaths, inlineConfigs []string, format string, resume bool, prompt
 		fmt.Printf("\n[%d/%d] %s\n", i+1, len(units), unit.ID)
 
 		unitReport, err := pipeline.Analyze(ctx, unit, calleeSummaries)
-		fmt.Print("\r\033[K") // Clear the phase line
+		clearLine()
 		if err != nil {
 			lastErr = fmt.Errorf("analyze %s: %w", unit.ID, err)
 			fmt.Printf("Error: %v\n", lastErr)
