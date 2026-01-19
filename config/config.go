@@ -15,10 +15,10 @@ var schemaCue string
 
 // Config is the main configuration structure
 type Config struct {
-	LLM      LLMConfig      `json:"llm"`
-	Cache    CacheConfig    `json:"cache"`
-	Output   OutputConfig   `json:"output"`
-	Analyses []AnalysisPass `json:"analyses"`
+	LLM     LLMConfig      `json:"llm"`
+	Cache   CacheConfig    `json:"cache"`
+	Output  OutputConfig   `json:"output"`
+	Analyse []AnalysisPass `json:"analyse"`
 }
 
 // LLMConfig holds LLM connection settings

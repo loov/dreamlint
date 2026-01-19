@@ -74,7 +74,7 @@ func (p *Pipeline) reportProgress(event ProgressEvent) {
 
 // LoadPrompts loads all prompt templates from config
 func (p *Pipeline) LoadPrompts() error {
-	for _, pass := range p.config.Analyses {
+	for _, pass := range p.config.Analyse {
 		if !pass.Enabled {
 			continue
 		}
@@ -167,7 +167,7 @@ func (p *Pipeline) Analyze(ctx context.Context, unit *extract.AnalysisUnit, call
 	}
 
 	// Run analysis passes
-	for _, pass := range p.config.Analyses {
+	for _, pass := range p.config.Analyse {
 		if !pass.Enabled || pass.Name == "summary" {
 			continue
 		}
@@ -280,7 +280,7 @@ func (p *Pipeline) runSummaryPass(ctx context.Context, promptCtx PromptContext) 
 
 	// Find LLM config for summary pass
 	llmCfg := p.config.LLM
-	for _, pass := range p.config.Analyses {
+	for _, pass := range p.config.Analyse {
 		if pass.Name == "summary" && pass.LLM != nil {
 			llmCfg = *pass.LLM
 			break

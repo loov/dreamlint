@@ -77,7 +77,7 @@ func runPipelineGoldenTest(t *testing.T, txtarFile string) {
 		Cache: config.CacheConfig{
 			Enabled: false,
 		},
-		Analyses: []config.AnalysisPass{
+		Analyse: []config.AnalysisPass{
 			{Name: "summary", Prompt: "builtin:summary", Enabled: true},
 			{Name: passName, Prompt: "builtin:" + passName, Enabled: true},
 		},

@@ -22,8 +22,8 @@ func TestLoadConfig(t *testing.T) {
 	if cfg.Cache.Dir != ".dreamlint/cache" {
 		t.Errorf("cache.dir = %s, want .dreamlint/cache", cfg.Cache.Dir)
 	}
-	if len(cfg.Analyses) != 2 {
-		t.Errorf("analyses count = %d, want 2", len(cfg.Analyses))
+	if len(cfg.Analyse) != 2 {
+		t.Errorf("analyses count = %d, want 2", len(cfg.Analyse))
 	}
 }
 

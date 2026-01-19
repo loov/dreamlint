@@ -43,5 +43,5 @@ package config
 		markdown: string | *"dreamlint-report.md"
 		sarif:    string | *"dreamlint-report.sarif"
 	}
-	analyses: [...#AnalysisPass]
+	analyse: [...#AnalysisPass]
 }

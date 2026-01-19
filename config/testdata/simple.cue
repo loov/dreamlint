@@ -4,14 +4,7 @@ llm: {
 	model: "llama3"
 }
 
-passes: {
-    summary: {
-        prompt: "prompts/summary.txt"
-        description: "Generate a summary of the code"
-    }
-}
-
-analyses: [
+analyse: [
 	{name: "summary", prompt: "prompts/summary.txt"},
 	{name: "security", prompt: "prompts/security.txt"},
 ]
