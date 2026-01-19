@@ -44,7 +44,10 @@ package config
 	}
 
 	// pass allows definining set of passes that will be all loaded.
-	pass: [Name=string]: {{#AnalysisPass} & {name: Name}}
+	pass: {[Name=string]: {{#AnalysisPass} & {name: Name}}}
 	// analyse specifies which passes to run.
 	analyse: [...#AnalysisPass] | *[for k, v in pass { {v} }]
 }
+
+// Enforce that the package conforms to #Config
+#Config
