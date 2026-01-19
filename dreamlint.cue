@@ -5,7 +5,9 @@ package config
 llm: {
 	provider:    "openai"
 	base_url:    "http://localhost:1234/v1"
-	model:       string | *"qwen/qwen3-next-80b"
+	// qwen3-coder-30b and devstral-2 seem to be good choices,
+	// however the "devstral-2" does not seem to provide good line numbers.
+	model:       string | *"qwen/qwen3-coder-30b"
 	max_tokens:  262144
 	temperature: 0.1
 }

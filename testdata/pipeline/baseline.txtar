@@ -5,10 +5,6 @@ package: ./testdata/testpkg
 == prompt 0 ==
 You are analyzing a Go function to create a summary of its behavior.
 
-
-## Function: Add
-Package: testpkg
-
 ```go
 // Add adds two numbers.
 //
@@ -32,10 +28,6 @@ Be precise and concise. Focus on what callers need to know.
 
 == prompt 1 ==
 You are reviewing Go code for common issues and mistakes.
-
-
-## Function: Add
-Package: testpkg
 
 ```go
 // Add adds two numbers.

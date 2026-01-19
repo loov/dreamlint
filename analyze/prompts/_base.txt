@@ -3,17 +3,11 @@
 
 ## Functions (mutually recursive group)
 {{range .Functions}}
-### {{.Name}}
-
 ```go
 {{.Body}}
 ```
 {{end -}}
 {{- else}}
-
-## Function: {{.Name}}
-Package: {{.Package}}
-
 ```go
 {{.Body}}
 ```
