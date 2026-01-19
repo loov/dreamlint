@@ -16,6 +16,15 @@ const (
 	SeverityInfo     Severity = "info"
 )
 
+// SeverityStrings is a list of all severity levels
+var SeverityStrings = []string{
+	string(SeverityCritical),
+	string(SeverityHigh),
+	string(SeverityMedium),
+	string(SeverityLow),
+	string(SeverityInfo),
+}
+
 // Report is the complete analysis report
 type Report struct {
 	Metadata Metadata              `json:"metadata"`

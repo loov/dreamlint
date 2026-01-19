@@ -48,7 +48,6 @@ func TestLoadConfig_Auto(t *testing.T) {
 	}
 }
 
-
 func TestLoadConfig_Auto_Specify(t *testing.T) {
 	cfg, err := LoadConfig([]string{"./testdata/auto.cue", "./testdata/auto.cue"},
 		[]string{

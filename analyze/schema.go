@@ -1,6 +1,9 @@
 package analyze
 
-import "github.com/loov/dreamlint/llm"
+import (
+	"github.com/loov/dreamlint/llm"
+	"github.com/loov/dreamlint/report"
+)
 
 // SummarySchema is the JSON schema for summary responses
 var SummarySchema = &llm.JSONSchema{
@@ -57,7 +60,7 @@ var IssuesSchema = &llm.JSONSchema{
 						},
 						"severity": map[string]any{
 							"type":        "string",
-							"enum":        []string{"critical", "important", "minor"},
+							"enum":        report.SeverityStrings,
 							"description": "Severity of the issue",
 						},
 						"message": map[string]any{
