@@ -14,8 +14,10 @@ Look for these vulnerability categories:
 - Insecure Deserialization: Untrusted data in unmarshal calls
 - Hardcoded Secrets: API keys, passwords, tokens in code
 - Weak Cryptography: Insecure algorithms, weak random sources
-- Race Conditions: Unsynchronized access to shared state
 - Information Disclosure: Sensitive data in logs or errors
+- Insecure Direct Object Reference (IDOR): Resource accessed or modified by caller-supplied ID without verifying the caller has permission for that specific resource
+- SQL Column Injection: Sort or filter columns interpolated from caller-supplied strings instead of mapping a fixed set of named values to SQL fragments
+- Unsafe Deserialization: Language-native serialization (Python pickle, Java Serializable, Go gob with interface{}) used across process or service boundaries
 
 Only report actual security issues.
 {{- template "issues-format" .}}

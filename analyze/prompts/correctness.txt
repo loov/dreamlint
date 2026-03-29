@@ -8,7 +8,7 @@ You are reviewing Go code for correctness issues.
 
 Error Handling:
 - Ignored errors (assigned to _ or not checked)
-- Missing error wrapping (use fmt.Errorf with %w)
+- Errors propagated without any wrapping or context (use fmt.Errorf with %w, or Op-based domain wrapping if a domain Error type is in use)
 - Panic for recoverable errors
 - Error shadowing in inner scopes
 
@@ -25,5 +25,17 @@ Resource Management:
 - Resources not released on error paths
 - Context cancellation not checked in long operations
 - Missing timeouts on network operations
+
+Error Type Discipline:
+- Lookup-by-ID returning (nil, nil) instead of an ENOTFOUND error
+- External errors (sql.ErrNoRows, os.ErrNotExist) escaping the implementation boundary untranslated
+- Leaf errors carrying both Code and Err (leaf: Code+Message only; wrapping: Op+Err only)
+- Missing Op wrap on significant function boundaries
+
+SQL / Data Access:
+- rows.Close() not deferred immediately after a successful QueryContext call
+- Result slice initialized with var (encodes as JSON null) instead of make([]*T, 0)
+- rows.Err() not checked after the iteration loop
+- Caller-supplied strings interpolated directly into SQL ORDER BY or WHERE clauses
 
 {{- template "issues-format" .}}

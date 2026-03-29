@@ -1,6 +1,25 @@
-You are reviewing Go code for common issues and mistakes.
+You are reviewing Go code for logical correctness.
 {{template "function-context" .}}
+{{- template "summary-context" .}}
 
-Is this function correct?
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
 
 {{- template "issues-format" .}}
