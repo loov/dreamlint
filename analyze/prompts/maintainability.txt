@@ -13,15 +13,20 @@ Complexity:
 
 Readability:
 - Magic numbers without named constants
-- Unclear variable or function names
 - Complex logic without explanatory comments
 - Inconsistent naming conventions
 
 API Design (exported functions only):
-- Exported functions without documentation
 - Too many parameters (consider options struct)
 - Boolean parameters that reduce readability
+- Pass-through methods whose entire body is a single forwarding call with the same signature
+
+Naming and Comments:
+- Names too vague to guess meaning at the call site without documentation
+- Boolean variable or field names that are not predicates (e.g. blinkStatus instead of cursorVisible)
+- Comments that restate what the code already shows rather than explaining why
+- Exported types, variables, or methods missing godoc comments
 
 Only report significant maintainability issues. Ignore minor style preferences.
-Use severity "minor" for suggestions, "important" for real maintainability problems.
+Use severity "low" for style suggestions, "medium" for real maintainability problems.
 {{- template "issues-format" .}}

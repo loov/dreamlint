@@ -1,6 +1,7 @@
 You are analyzing a Go function to create a summary of its behavior.
 {{template "function-context" .}}
 {{- template "callees-context" .}}
+{{- template "external-funcs-context" .}}
 
 Analyze this function and respond with JSON in this exact format:
 {
@@ -10,4 +11,8 @@ Analyze this function and respond with JSON in this exact format:
   "security": ["security-relevant properties for callers to know"]
 }
 
-Be precise and concise. Focus on what callers need to know.
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
