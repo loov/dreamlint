@@ -23,7 +23,6 @@ Resource Management:
 - Missing defer for cleanup
 - defer in loops (accumulates until function returns)
 - Resources not released on error paths
-- Context cancellation not checked in long operations
 - Missing timeouts on network operations
 
 Error Type Discipline:
@@ -31,11 +30,18 @@ Error Type Discipline:
 - External errors (sql.ErrNoRows, os.ErrNotExist) escaping the implementation boundary untranslated
 - Leaf errors carrying both Code and Err (leaf: Code+Message only; wrapping: Op+Err only)
 - Missing Op wrap on significant function boundaries
+- Type-asserting *Error directly at the call site instead of calling ErrorCode() and
+  ErrorMessage() — direct type assertions couple callers to the concrete Error struct and
+  break when the error is wrapped
 
 SQL / Data Access:
+- defer tx.Rollback() not called immediately after a successful BeginTx — without it a failed
+  commit or a panic will leave the transaction open and hold database locks
 - rows.Close() not deferred immediately after a successful QueryContext call
 - Result slice initialized with var (encodes as JSON null) instead of make([]*T, 0)
 - rows.Err() not checked after the iteration loop
-- Caller-supplied strings interpolated directly into SQL ORDER BY or WHERE clauses
+- N+1 query pattern: one query issued per record inside a loop when a JOIN or batch fetch would retrieve the same data in one round trip
+- Transaction held open while waiting for user input or an external HTTP response — transactions must be short; never span a user interaction
+- Transaction exposed to service callers — *Tx or *sql.Tx accepted as a parameter or returned from a service method; transactions are an implementation detail and must not leak across the service boundary
 
 {{- template "issues-format" .}}

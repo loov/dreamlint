@@ -1,0 +1,47 @@
+You are reviewing Go code for domain type and CRUD convention violations.
+{{template "function-context" .}}
+{{- template "summary-context" .}}
+{{- template "callees-context" .}}
+
+## CRUD Conventions
+
+FindByID / FindOne:
+- Returns (nil, nil) when the entity does not exist — must return ENOTFOUND
+- Does not wrap the callee's error with an Op before returning
+
+FindMany / List:
+- Result slice declared with var (encodes as JSON null) — initialize with make([]*T, 0)
+- Returns ENOTFOUND for an empty result set — an empty list is not an error
+- Second return value omitted — FindMany must return ([]*T, int, error) where int is the
+  total count for pagination regardless of Limit/Offset
+
+Create:
+- Does not mutate the input pointer to set ID, CreatedAt, or UpdatedAt on success
+- Returns the new entity as a separate value rather than populating the caller's struct
+
+Update:
+- Does not return the updated object on error — callers need it to replay a form
+- Accepts individual fields rather than an *Update struct with pointer fields
+- Uses a non-pointer field type in an Update struct — nil cannot express "do not change this field"
+
+Delete:
+- Accepts more than the primary key as parameters — authorization and ownership checks belong
+  inside the implementation, not in the signature
+- Checks authorization outside the implementation (in the handler) rather than enforcing it
+  inside the data layer using UserIDFromContext
+
+Filter structs:
+- Filter field is a non-pointer type — nil cannot express "not filtered on"
+- Accepts a raw offset integer for pagination — use a cursor (last-seen ID) to avoid skipped
+  or duplicated rows under concurrent writes
+
+Interface contracts:
+- Exported service interface method missing a godoc comment that names the error codes it
+  can return — callers cannot know which errors to handle without this contract
+- Service interface method whose first parameter is not context.Context — all service methods
+  must accept context.Context as their first argument for cancellation and auth propagation
+- Caching or decoration wrapper that re-implements domain logic rather than delegating to the
+  wrapped service — wrappers must satisfy the same interface and add one concern only
+
+Only report actual violations of these conventions.
+{{- template "issues-format" .}}

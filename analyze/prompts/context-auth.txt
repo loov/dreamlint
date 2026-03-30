@@ -1,0 +1,36 @@
+You are reviewing Go code for context and authorization pattern violations.
+{{template "function-context" .}}
+{{- template "summary-context" .}}
+{{- template "callees-context" .}}
+
+## Context Patterns
+
+- context.Context stored as a struct field — it must be passed as an explicit function parameter
+- context.Value used to retrieve a typed domain value with an untyped key (string, int
+  literal) or an exported key type — keys must be unexported typed constants
+  (type contextKey int; const userContextKey contextKey = iota) so different packages cannot
+  collide; provide package-level accessors (UserFromContext) rather than exposing the key
+- context.Value used to pass business data, feature flags, or configuration that should be
+  explicit function parameters — Value is for request-scoped cross-cutting concerns only
+  (trace IDs, auth identity)
+- Context not propagated to a downstream call — DB methods (QueryContext, ExecContext),
+  outbound HTTP (http.NewRequestWithContext), and gRPC calls must receive the caller's ctx
+
+## Authorization
+
+Layer responsibility: the transport layer (HTTP handler or middleware) authenticates the caller
+and stores identity on the context. Service and data layers extract identity from context and
+enforce authorization. Look for violations of this boundary:
+
+- Service or repository method that calls context.WithValue to attach user identity — only
+  the transport layer should set auth context; downstream layers only read it
+- Authorization enforced by fetching all rows and then filtering in application code — the
+  constraint must be embedded in the SQL WHERE clause so the database enforces it, not
+  application code after the fact
+- Service method that accepts userID as an explicit parameter and passes it as an optional
+  filter rather than extracting it from context and treating it as a mandatory constraint
+- Authorization decision made exclusively in middleware with no enforcement in the service or
+  data layer — callers that bypass the middleware (background jobs, CLI, tests) get no enforcement
+
+Only report actual violations.
+{{- template "issues-format" .}}

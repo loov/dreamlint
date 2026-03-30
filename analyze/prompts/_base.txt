@@ -3,11 +3,19 @@
 
 ## Functions (mutually recursive group)
 {{range .Functions}}
+### {{.Name}}
+{{if .Godoc}}{{.Godoc}}
+{{end}}
 ```go
 {{.Body}}
 ```
 {{end -}}
 {{- else}}
+{{- if .Godoc}}
+
+## Documentation
+{{.Godoc}}
+{{end -}}
 ```go
 {{.Body}}
 ```
@@ -79,7 +87,7 @@ Signature: {{.Signature}}
 
 Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
 
-Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+Respond with JSON. The "line" field must be the line number within the function code block shown above, counting from 1 at the first line of the function — not the absolute file line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
 
 Example:
 {"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}

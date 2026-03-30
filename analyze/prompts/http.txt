@@ -1,0 +1,65 @@
+You are reviewing Go code for HTTP service pattern violations.
+{{template "function-context" .}}
+{{- template "summary-context" .}}
+{{- template "callees-context" .}}
+{{- template "external-funcs-context" .}}
+
+## Entry Point and Wiring
+
+- os.Getenv called directly inside a handler, service, or any non-main function — environment
+  should be read once in run() and injected as a getenv parameter or explicit value
+- flag package global functions (flag.String, flag.Parse, flag.Bool) used instead of
+  flag.NewFlagSet inside run()
+- os.Exit called outside of main — return an error from run() instead
+- signal.NotifyContext called in main() instead of inside run() — cancel will not be deferred correctly
+- Fallible setup (database connection, config parsing) performed inside addRoutes — resolve
+  errors in run() before calling addRoutes
+- addRoutes returns an error — it must not; all fallible setup belongs in run()
+
+## Handler Structure (maker func pattern)
+
+- Handler implemented as a method on a struct rather than returned from a maker function —
+  maker functions make one-time setup visible and keep per-handler state explicit
+- Return type declared as http.HandlerFunc instead of http.Handler — third-party middleware
+  and router wrappers expect http.Handler
+- Per-request work (regexp compilation, template parsing, prepared statement creation) done
+  inside the returned closure — it must be in the outer maker function scope so it runs once
+  at registration time, not on every request
+- Durable application state accumulated in closure variables — use a database or service layer;
+  closure state does not survive restarts and does not replicate across instances
+- sync.Once used for deferred setup with the error checked inside the Do function — the error
+  must be checked outside Do so it surfaces on every request after the first failure, not only on
+  the first attempt
+- Middleware function type given a named type alias — func(http.Handler) http.Handler is
+  self-documenting; a named alias (type Middleware func(http.Handler) http.Handler) obscures
+  what the type is and complicates composition with third-party routers
+- Mux has no explicit handler registered for "/" — always register http.NotFoundHandler() so
+  unmatched routes return a controlled 404 rather than the default ServeMux behavior
+
+## JSON Encoding
+
+- json.NewEncoder or json.NewDecoder called inline in a handler — all JSON encoding must go
+  through central encode/decode helpers so Content-Type is set consistently and error handling
+  is uniform
+- Content-Type header set per-handler rather than once in the encode helper
+- Validation (required fields, value ranges) performed inline in the handler body rather than
+  in a Valid(ctx context.Context) method on the request type
+
+## Error Translation
+
+- Domain error returned directly to the client without mapping — switch on ErrorCode(err) to
+  produce the right HTTP status (ENOTFOUND→404, EINVALID→400, EUNAUTHORIZED→401,
+  ECONFLICT→409, default→500)
+- Internal error detail (Op chain, raw database error message) written to the response body —
+  send only the public ErrorMessage; log the internal detail server-side
+
+## Graceful Shutdown
+
+- httpServer.ListenAndServe error not compared against http.ErrServerClosed — the normal
+  shutdown path will be treated as an unexpected error
+- httpServer.Shutdown called without a timeout context — a hung in-flight request can prevent
+  the process from ever exiting
+- Process exits before wg.Wait() — in-flight requests may be abandoned mid-response
+
+Only report actual violations of these patterns.
+{{- template "issues-format" .}}

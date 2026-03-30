@@ -1,0 +1,50 @@
+You are reviewing Go code for functional core / imperative shell violations.
+{{template "function-context" .}}
+{{- template "summary-context" .}}
+{{- template "callees-context" .}}
+{{- template "external-funcs-context" .}}
+
+## I/O Mixed into Domain Logic
+
+A domain or business logic function should accept values and return new values without
+performing I/O. A function that contains computation (sorting, filtering, ranking, validation,
+pricing, scheduling) is difficult to test and reason about when it also performs I/O. Look for
+functions that mix both:
+
+- Direct calls into database/sql, sqlx, pgx, or any ORM package alongside business logic
+- Outbound HTTP calls (http.Get, http.Post, http.Client.Do) or gRPC client calls alongside
+  computation — move the I/O to the caller and pass the result in as a parameter
+- time.Now() — inject the current time as a parameter; a hidden time.Now() call makes the
+  function non-deterministic and causes intermittent test failures
+- rand.Float64(), rand.Intn(), or any global random call — inject the rand.Source or the
+  already-generated value; global random state cannot be controlled in tests
+- os.Getenv, os.ReadFile, os.Open, or direct filesystem access — read at the boundary and
+  pass values in; domain functions should not know where configuration comes from
+- Dependency accepted as a concrete struct type rather than an interface — concrete types
+  make the function untestable without the real implementation; accept the narrowest interface
+  that provides the methods the function actually calls
+
+## Mutation
+
+- Method mutates a field on its receiver when it could return a new value — domain types
+  should be transformed (accept value, return new value), not mutated in place; receiver
+  mutation makes behavior invisible to callers that hold the original value
+- Function modifies a slice or map passed as a parameter — return a new collection so callers
+  are not surprised by hidden side effects on their own data structures
+
+## Shell Code Absorbing Logic
+
+The imperative shell (service methods, HTTP handlers, background workers) should be a flat
+sequence of I/O calls and value assignments with minimal branching. When the shell accumulates
+logic it can no longer be understood without reading it all, and that logic cannot be tested
+without triggering I/O. Look for:
+
+- Sorting, filtering, ranking, or business rule evaluation done inline in a service method or
+  handler body rather than delegated to a pure function — extract the computation; call it
+  with real values in the shell
+- Shell code with three or more conditional branches where the branch condition depends only
+  on values already in scope (no I/O needed to resolve it) — this logic belongs in a pure function
+
+Do not flag I/O in functions whose documented purpose is I/O (repository methods, HTTP
+handlers, background pollers, main wiring code).
+{{- template "issues-format" .}}

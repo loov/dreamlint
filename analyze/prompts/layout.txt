@@ -1,0 +1,46 @@
+You are reviewing Go code for application layout violations.
+{{template "function-context" .}}
+{{- template "summary-context" .}}
+{{- template "callees-context" .}}
+{{- template "external-funcs-context" .}}
+
+## init() Functions
+
+init() must not perform side effects. If this is an init() function, look for:
+
+- Network connection opened (http.Get, sql.Open, grpc.Dial, redis.NewClient, etc.) — defer
+  this to an explicit Open() or Connect() constructor so errors are returned and callers control
+  the lifecycle
+- File opened or read (os.Open, os.ReadFile, ioutil.ReadFile) — same; errors from init() cannot
+  be handled or retried
+- Global variable assigned a value that depends on I/O or external state — any global var
+  requiring initialization that can fail belongs in an explicit constructor
+- Mutation of a package-level variable shared by tests — init() runs once per binary; tests
+  cannot reset it; use constructor injection instead
+- Flag registered with the global flag package (flag.String, flag.Bool) — global flags prevent
+  flag.NewFlagSet-based testing; register in run() instead
+
+## main() Functions
+
+main() must do nothing except call run() and handle the error. If this is a main() function,
+look for:
+
+- Business logic (conditionals, loops, data transformation) — belongs in run() or a domain function
+- Flag parsing (flag.Parse()) — belongs inside run() using flag.NewFlagSet(args[0], ...)
+- Dependency construction (sql.Open, http.NewServeMux, constructors) — belongs inside run()
+- os.Getenv called directly — belongs inside run() via the getenv parameter
+- Anything beyond the pattern: `if err := run(...); err != nil { os.Exit(1) }`
+
+## Global State in Application Functions
+
+Dependencies must be injected explicitly; package-level variables must not carry application
+state. In any non-init, non-main function, look for:
+
+- A DB connection, HTTP client, cache client, or config struct read from a package-level variable
+  rather than received as a parameter or struct field — hidden globals make functions impossible
+  to test in isolation and couple all callers to the same instance
+- A singleton initialized via a package-level var declaration with a composite literal rather
+  than a constructor — callers share state they cannot control or replace
+
+Only report actual violations.
+{{- template "issues-format" .}}

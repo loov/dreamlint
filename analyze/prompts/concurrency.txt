@@ -5,7 +5,8 @@ You are reviewing Go code for concurrency issues.
 {{- template "external-funcs-context" .}}
 
 ## Concurrency Review Checklist
-Look for:
+
+Safety:
 - Race conditions on shared state without synchronization
 - Goroutine leaks (goroutines that never terminate)
 - Missing mutex locks or unlocks
@@ -13,7 +14,24 @@ Look for:
 - Channel misuse (send on closed channel, nil channel operations)
 - select without a default case where non-blocking dispatch was clearly intended
 - Improper use of sync.WaitGroup (Add after Wait, wrong count)
-- Context cancellation not checked in long operations
+- Context cancellation not checked in long-running operations
 - sync.Mutex copied by value
+- sync.RWMutex used but reads acquire a full write lock instead of RLock — serializes all reads unnecessarily
+
+Design:
+- Multiple goroutines writing to the same external resource — designate one owner goroutine;
+  all others produce immutable values and send them to the owner via a channel
+- Mutex reached for as the first response to a shared-state problem when an immutable-value-
+  and-channel design would eliminate the shared state entirely
+- errgroup or fan-in channel not used to collect results from parallel goroutines — instead,
+  results accumulated via a shared slice with a mutex, or goroutines write directly to an
+  external resource rather than sending immutable values to an owner
+
+Time:
+- time.Now() compared against another time.Now() across goroutines to determine ordering —
+  wall clocks drift and NTP can move time backward; use a monotonic measurement (time.Since,
+  time.Now().Add) for elapsed time and timeouts; use wall-clock time only for display
+- time.Now(), rand, or os.Getenv called inside concurrent logic instead of injected at the
+  boundary — hidden global state causes flaky tests and makes concurrent behavior non-deterministic
 
 {{- template "issues-format" .}}

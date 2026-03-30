@@ -5,7 +5,7 @@ You are reviewing Go code for maintainability issues.
 ## Maintainability Review Checklist
 
 Complexity:
-- Functions longer than 50 lines
+- Functions over 80 lines that aren't justified by a single, clearly focused purpose
 - Deep nesting (more than 3 levels)
 - Functions with more than 5 parameters
 - Complex boolean expressions
@@ -15,17 +15,37 @@ Readability:
 - Magic numbers without named constants
 - Complex logic without explanatory comments
 - Inconsistent naming conventions
+- Named type not used for a pair or group of values that always travel together — a struct
+  with generic field names (Field1/Value, First/Second) conveys nothing at the call site
+- Behavior that violates common reader expectations without prominent documentation:
+  a constructor that spawns background goroutines, a method that modifies a caller-supplied
+  parameter, a function named Get that has observable side effects
 
 API Design (exported functions only):
 - Too many parameters (consider options struct)
-- Boolean parameters that reduce readability
-- Pass-through methods whose entire body is a single forwarding call with the same signature
+- Boolean parameters that reduce readability at the call site
+- Pass-through method whose entire body is a single forwarding call with the same signature
+- Shallow module: the interface is nearly as complex as the implementation — no meaningful
+  complexity is hidden, so callers gain nothing from the abstraction
+- Configuration parameter exported when the module itself could provide a sensible default
+  and callers are unlikely to know a better value — pull the decision downward
+- Domain constraint enforced by scattered if-checks at every call site rather than encoded
+  once in a type with a validated constructor — the compiler should enforce what it can
+- Repetition: the same nontrivial logic (multi-step transformation, validation sequence,
+  query-building pattern) appears in two or more places without extraction into a shared helper
+- Conjoined methods: two functions that cannot be understood independently because one silently
+  assumes state or invariants that only the other establishes — a caller who reads one without
+  the other will use it incorrectly
 
 Naming and Comments:
 - Names too vague to guess meaning at the call site without documentation
 - Boolean variable or field names that are not predicates (e.g. blinkStatus instead of cursorVisible)
 - Comments that restate what the code already shows rather than explaining why
 - Exported types, variables, or methods missing godoc comments
+- Non-trivial exported function missing a contract comment specifying its preconditions and
+  postconditions — format: // Requires: ... (entry conditions) / // Ensures: ... (guarantees);
+  if Requires needs more than one sentence the function has too many entry conditions; if Ensures
+  requires enumerating many cases the function does too much
 
 Only report significant maintainability issues. Ignore minor style preferences.
 Use severity "low" for style suggestions, "medium" for real maintainability problems.

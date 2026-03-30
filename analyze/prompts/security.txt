@@ -11,13 +11,16 @@ Look for these vulnerability categories:
 - Path Traversal: File operations with user-controlled paths, missing sanitization
 - XSS: Unescaped output in HTML contexts
 - SSRF: User-controlled URLs in HTTP requests
-- Insecure Deserialization: Untrusted data in unmarshal calls
+- Insecure Deserialization: Decoding user-controlled input without size limits (missing io.LimitReader on the body), or decoding into interface{}/any where attacker-supplied type data can violate caller assumptions
 - Hardcoded Secrets: API keys, passwords, tokens in code
 - Weak Cryptography: Insecure algorithms, weak random sources
 - Information Disclosure: Sensitive data in logs or errors
 - Insecure Direct Object Reference (IDOR): Resource accessed or modified by caller-supplied ID without verifying the caller has permission for that specific resource
 - SQL Column Injection: Sort or filter columns interpolated from caller-supplied strings instead of mapping a fixed set of named values to SQL fragments
 - Unsafe Deserialization: Language-native serialization (Python pickle, Java Serializable, Go gob with interface{}) used across process or service boundaries
+- Integer Overflow in Allocation: caller-supplied length or count used in make(), new(), or a
+  size arithmetic expression without an upper-bound check — an attacker-controlled large value
+  can cause an enormous allocation, OOM, or wrap to a negative length
 
 Only report actual security issues.
 {{- template "issues-format" .}}

@@ -1,0 +1,84 @@
+You are reviewing Go code for distributed systems reliability violations.
+{{template "function-context" .}}
+{{- template "summary-context" .}}
+{{- template "callees-context" .}}
+{{- template "external-funcs-context" .}}
+
+## Timeouts
+
+- Outbound HTTP call made with http.DefaultClient or a client with no Timeout set — a slow
+  upstream will hold the goroutine indefinitely, eventually exhausting the pool
+- Database call made with a context that has no deadline — long-running queries will not be
+  cancelled when the caller gives up or the request is aborted
+- Context passed to a network call is context.Background() or context.TODO() rather than the
+  request-scoped context received from the caller
+
+## Retries
+
+- Retry loop uses time.Sleep with a fixed interval — use exponential backoff with random jitter
+  (base * 2^n + jitter) to avoid coordinated retry storms when many clients fail simultaneously
+- Retry loop does not classify errors as retryable before retrying — 400, 404, and validation
+  errors must not be retried; only transient errors (timeouts, 503, connection reset) should be
+- Retry loop has no maximum attempt count or deadline — will retry indefinitely under sustained failure
+
+## Idempotency
+
+- Mutating operation (create entity, charge, send notification, enqueue job) that does not
+  check or assign a client-supplied idempotency key before executing — duplicate requests
+  produce duplicate side effects
+- Idempotency key stored only in an in-memory map or cache — must be persisted durably so
+  deduplication survives process restarts; in-memory deduplication is lost on crash
+
+## Fan-out and Isolation
+
+- Independent downstream calls issued sequentially when they could run concurrently — use
+  errgroup and issue them in parallel; sequential fan-out multiplies latency unnecessarily
+- No per-upstream goroutine limit or semaphore — a single slow dependency can exhaust all
+  available goroutines and starve unrelated request handling
+
+## Dual Writes
+
+- Two separate systems (database + cache, database + search index, two databases) written to
+  in sequence without a compensating mechanism — if the second write fails the systems are
+  permanently inconsistent; treat the event log or primary database as the source of truth and
+  let derived systems subscribe via CDC
+
+## Consistency
+
+- Read-modify-write cycle (SELECT then UPDATE) without SELECT FOR UPDATE or a compare-and-
+  swap on a version/ETag column — concurrent requests will silently overwrite each other
+- SELECT FOR UPDATE issued without a context that has a deadline — if the lock holder stalls,
+  the waiting transaction will block indefinitely
+- Counter or balance incremented with a read-modify-write cycle instead of an atomic
+  UPDATE counter = counter + ? — the read value may be stale by the time the write executes
+- Last-write-wins (LWW) conflict resolution used where data loss is unacceptable — LWW
+  silently discards concurrent writes; use a version column, vector clock, or merge function
+- Distributed lock used without a fencing token — if the lock holder pauses (GC, network
+  stall) after acquiring the lock, another node will acquire it; both nodes then believe they
+  hold the lock; every write to the shared resource must include the monotonic token and the
+  resource must reject writes with a stale token
+- Database table polled in a tight loop to detect new work — polling causes table-scan load
+  and lock contention; use a purpose-built message queue (Kafka, RabbitMQ, SQS) or
+  LISTEN/NOTIFY instead
+
+## Caching
+
+- Cache used as the sole copy of data with no independent source of truth — when the cache is
+  empty the system must be able to repopulate it; if it cannot, the cache is actually a database
+  and should be treated as one
+- Cached value written without an explicit TTL or invalidation strategy — unbounded TTLs cause
+  stale data to persist indefinitely across deployments and schema changes
+- Cache miss under high load not protected against stampede — when a popular key expires many
+  requests miss simultaneously and all rebuild concurrently; use probabilistic early expiration,
+  request coalescing, or a background refresh pattern
+
+## Encoding
+
+- json.Marshal / json.Encode used to serialize data crossing an internal service boundary —
+  use binary encoding (Protocol Buffers, Thrift, Avro) for internal inter-service communication;
+  JSON is acceptable only for external-facing APIs
+- Protocol Buffers field removed from a message definition without marking it reserved —
+  old consumers will re-use the field number for a different type, silently corrupting data
+
+Only report actual violations.
+{{- template "issues-format" .}}
