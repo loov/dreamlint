@@ -1,6 +1,6 @@
 module github.com/loov/dreamlint
 
-go 1.25
+go 1.26
 
 require (
 	cuelang.org/go v0.15.3

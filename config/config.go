@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"strings"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
@@ -116,5 +117,25 @@ func LoadConfig(paths []string, inlineConfigs []string) (*Config, error) {
 	if err := unified.Decode(&cfg); err != nil {
 		return nil, fmt.Errorf("decode config: %w", err)
 	}
+
+	// Apply environment variable fallback for api_key if not set in config.
+	// Resolution order:
+	//   1. config value (from -config file or -c inline)
+	//   2. DREAMLINT_API_KEY — provider-agnostic override
+	//   3. ANTHROPIC_API_KEY — when base_url contains anthropic.com
+	//      GEMINI_API_KEY    — when base_url contains googleapis.com
+	//      OPENAI_API_KEY    — when base_url contains openai.com
+	if cfg.LLM.APIKey == "" {
+		if key := os.Getenv("DREAMLINT_API_KEY"); key != "" {
+			cfg.LLM.APIKey = key
+		} else if strings.Contains(cfg.LLM.BaseURL, "anthropic.com") {
+			cfg.LLM.APIKey = os.Getenv("ANTHROPIC_API_KEY")
+		} else if strings.Contains(cfg.LLM.BaseURL, "googleapis.com") {
+			cfg.LLM.APIKey = os.Getenv("GEMINI_API_KEY")
+		} else if strings.Contains(cfg.LLM.BaseURL, "openai.com") {
+			cfg.LLM.APIKey = os.Getenv("OPENAI_API_KEY")
+		}
+	}
+
 	return &cfg, nil
 }
