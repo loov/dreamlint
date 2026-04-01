@@ -15,6 +15,11 @@ You are reviewing Go code for context and authorization pattern violations.
   (trace IDs, auth identity)
 - Context not propagated to a downstream call — DB methods (QueryContext, ExecContext),
   outbound HTTP (http.NewRequestWithContext), and gRPC calls must receive the caller's ctx
+- context.Background() or context.TODO() created inside a request handler or service method
+  and passed to a downstream call — this detaches cancellation, deadline, trace context, and
+  auth identity from the incoming request; use the ctx parameter received from the caller;
+  context.Background() is correct only in main, in initialization code, and in background
+  goroutines that outlive a request's scope
 
 ## Authorization
 

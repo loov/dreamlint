@@ -11,7 +11,7 @@ package config
 	// api_key specifies the API key for the Language Model provider.
 	api_key?: string
 	// max_tokens specifies the maximum number of tokens to be used by the Language Model.
-	max_tokens: int | *4096
+	max_tokens: int | *32768
 	// temperature specifies the temperature to be used by the Language Model.
 	temperature: float | *0.1
 }
@@ -43,7 +43,7 @@ package config
 		sarif:    string | *"dreamlint-report.sarif"
 	}
 
-	// pass allows definining set of passes that will be all loaded.
+	// pass allows defining a set of passes that will be all loaded.
 	pass: {[Name=string]: {{#AnalysisPass} & {name: Name}}}
 	// analyse specifies which passes to run.
 	analyse: [...#AnalysisPass] | *[for k, v in pass { {v} }]

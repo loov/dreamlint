@@ -20,6 +20,18 @@ Readability:
 - Behavior that violates common reader expectations without prominent documentation:
   a constructor that spawns background goroutines, a method that modifies a caller-supplied
   parameter, a function named Get that has observable side effects
+- Dead code: unexported function, type, or constant that is never referenced anywhere in the
+  package — every line implicitly claims it is in active use; dead code should be deleted and
+  recovered from version control if ever needed again
+- Information leakage: the same design decision (same error code string, same wire format
+  detail, same configuration key name, same protocol constant) defined independently in two
+  or more separate packages rather than once in a shared location — any future change requires
+  coordinated updates to every copy, and the copies will eventually diverge
+- Temporal decomposition: a sequence of functions decomposed by execution order
+  (fetchX, transformX, storeX as separately exported functions) rather than by knowledge
+  cohesion — callers must know and follow the correct call sequence to avoid violating
+  invariants; prefer one function that encapsulates the full sequence, or at minimum document
+  the required ordering explicitly with a contract comment
 
 API Design (exported functions only):
 - Too many parameters (consider options struct)

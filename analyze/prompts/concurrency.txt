@@ -27,6 +27,12 @@ Design:
   results accumulated via a shared slice with a mutex, or goroutines write directly to an
   external resource rather than sending immutable values to an owner
 
+Design (continued):
+- Filesystem or network access hardcoded inside a function rather than injected as an interface
+  (io.Reader, io.Writer, fs.FS, http.RoundTripper) — direct I/O access couples the function to
+  production systems, makes concurrent tests share global state, and prevents deterministic
+  testing; inject I/O as interfaces so tests supply an in-memory implementation
+
 Time:
 - time.Now() compared against another time.Now() across goroutines to determine ordering —
   wall clocks drift and NTP can move time backward; use a monotonic measurement (time.Since,

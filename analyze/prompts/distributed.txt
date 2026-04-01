@@ -34,7 +34,18 @@ You are reviewing Go code for distributed systems reliability violations.
 - Independent downstream calls issued sequentially when they could run concurrently — use
   errgroup and issue them in parallel; sequential fan-out multiplies latency unnecessarily
 - No per-upstream goroutine limit or semaphore — a single slow dependency can exhaust all
-  available goroutines and starve unrelated request handling
+  available goroutines and starve unrelated request handling; use a semaphore or separate
+  goroutine pool per upstream so one slow provider cannot block calls to all others
+- Unbounded fan-out to many backends without hedging or per-backend timeout — at p99, one
+  slow backend stalls the entire request; bound fan-out, set per-backend timeouts, or hedge
+  a small number of parallel requests and take the first response
+
+## Circuit Breakers
+
+- External service (HTTP, gRPC, database, cache) called in a tight retry loop or hot path
+  without a circuit breaker — when the downstream is degraded, direct retries amplify load
+  and hold goroutines; a circuit breaker trips open after a threshold of consecutive failures
+  and fails fast until the downstream recovers, protecting both the caller and the callee
 
 ## Dual Writes
 
@@ -71,6 +82,31 @@ You are reviewing Go code for distributed systems reliability violations.
 - Cache miss under high load not protected against stampede — when a popular key expires many
   requests miss simultaneously and all rebuild concurrently; use probabilistic early expiration,
   request coalescing, or a background refresh pattern
+
+## Dead Letter Queue
+
+- Message queue consumer (Kafka, RabbitMQ, SQS, Pub/Sub, or any broker) written without a
+  DLQ or dead-letter configuration — a malformed or unprocessable message causes crash →
+  redeliver → crash loops, blocking all subsequent messages on an ordered partition; after a
+  configurable number of retries (typically 3–5) the message must be routed to a DLQ and
+  processing must continue
+
+## Cross-Channel Timing
+
+- Data written to durable storage followed immediately by a notification sent via a separate
+  asynchronous channel (email, push notification, message broker, webhook) — the consumer who
+  receives the notification may read from a lagging replica and not find the data the
+  notification references; mitigate by embedding the essential data directly in the notification
+  payload, by requiring the consumer to wait for a minimum version or etag before reading, or
+  by using linearizable reads on the consumer side
+
+## Backpressure
+
+- Producer or sender that writes to a channel, queue, or downstream service without any
+  mechanism to slow down when the consumer cannot keep up — unbounded queues mask overload
+  and cause OOM crashes or unbounded latency increases; implement backpressure by returning
+  an error or HTTP 429 when capacity is exhausted, using bounded channels, or configuring
+  explicit queue depth limits with a flow-control strategy (TTL, tail drop, or 429 response)
 
 ## Encoding
 

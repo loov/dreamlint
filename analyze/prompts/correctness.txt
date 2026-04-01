@@ -43,5 +43,9 @@ SQL / Data Access:
 - N+1 query pattern: one query issued per record inside a loop when a JOIN or batch fetch would retrieve the same data in one round trip
 - Transaction held open while waiting for user input or an external HTTP response — transactions must be short; never span a user interaction
 - Transaction exposed to service callers — *Tx or *sql.Tx accepted as a parameter or returned from a service method; transactions are an implementation detail and must not leak across the service boundary
+- Caller-supplied string interpolated directly into a SQL query rather than passed as a
+  parameterized argument (? or $N placeholder) — use parameterized queries for all values;
+  map sort or filter column names from a fixed set of named constants to SQL fragments; never
+  interpolate caller input into the query string
 
 {{- template "issues-format" .}}
