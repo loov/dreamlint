@@ -67,8 +67,29 @@ pass: maintainability: {
 // By default dreamlint will run all the passes,
 // however you can either specify a subset of passes to run as shown below.
 //
-//   analyse: [pass.summary, pass.baseline, pass.correctness]
+//    analyse: [pass.summary, pass.baseline, pass.correctness]
 
 // Alternatively, you can add "enabled false" to disable a pass:
 //
-//   pass: security: { enabled: false }
+//    pass: security: { enabled: false }
+//
+// To define custom passes you can either define to load it from a file:
+//
+//    pass: http: {
+//    	name:        "http"
+//    	prompt:      "./my-prompts/http.txt"
+//    	description: "Analyses http request and response handling"
+//    }
+//
+// Or you can define an inline prompt:
+//
+//    pass: http: {
+//    	name:         "http"
+//    	description: "Analyses http request and response handling"
+//    	inline_prompt: """
+//         Review the http usage of the following code:
+//         {{template "function-context" .}}
+//      """
+//    }
+//
+// See other examples in ./analyze/prompts folder.

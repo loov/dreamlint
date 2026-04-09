@@ -161,6 +161,26 @@ func LoadPromptFromFS(fsys fs.FS, name string) (*template.Template, error) {
 	return mainTmpl, nil
 }
 
+// LoadInlinePrompt creates a prompt template from an inline string.
+func LoadInlinePrompt(name string, content string) (*template.Template, error) {
+	// Load base template for shared definitions
+	baseData, err := embeddedPrompts.ReadFile("prompts/_base.txt")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read embedded base template: %w", err)
+	}
+
+	tmpl := template.New(name)
+	if _, err := tmpl.Parse(string(baseData)); err != nil {
+		return nil, fmt.Errorf("failed to parse base template: %w", err)
+	}
+
+	mainTmpl, err := tmpl.New(name).Parse(content)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse inline prompt: %w", err)
+	}
+	return mainTmpl, nil
+}
+
 // ExecutePrompt executes a prompt template with the given context
 func ExecutePrompt(tmpl *template.Template, ctx PromptContext) (string, error) {
 	if tmpl == nil {

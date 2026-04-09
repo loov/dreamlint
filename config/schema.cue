@@ -21,7 +21,9 @@ package config
 	// name specifies the name of the analysis pass.
 	name: string
 	// prompt specifies the prompt file to use for the analysis pass.
-	prompt: string
+	prompt?: string
+	// inline_prompt specifies the prompt template inline.
+	inline_prompt?: string
 	// description specifies the description for the analysis pass.
 	description: string | *""
 	// enabled specifies whether the analysis pass is enabled.

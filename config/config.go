@@ -48,10 +48,11 @@ type OutputConfig struct {
 
 // AnalysisPass defines a single analysis pass
 type AnalysisPass struct {
-	Name    string     `json:"name"`
-	Prompt  string     `json:"prompt"`
-	Enabled bool       `json:"enabled"`
-	LLM     *LLMConfig `json:"llm,omitempty"`
+	Name         string     `json:"name"`
+	Prompt       string     `json:"prompt,omitempty"`
+	InlinePrompt string     `json:"inline_prompt,omitempty"`
+	Enabled      bool       `json:"enabled"`
+	LLM          *LLMConfig `json:"llm,omitempty"`
 }
 
 // envToCUE generates a CUE source file that defines an env struct

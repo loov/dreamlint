@@ -80,12 +80,16 @@ func (p *Pipeline) LoadPrompts() error {
 		var tmpl *template.Template
 		var err error
 
-		// If promptsFS is set and prompt is builtin, load from that filesystem
-		if p.promptsFS != nil && strings.HasPrefix(pass.Prompt, "builtin:") {
+		switch {
+		case pass.InlinePrompt != "":
+			tmpl, err = LoadInlinePrompt(pass.Name, pass.InlinePrompt)
+		case p.promptsFS != nil && strings.HasPrefix(pass.Prompt, "builtin:"):
 			name := strings.TrimPrefix(pass.Prompt, "builtin:")
 			tmpl, err = LoadPromptFromFS(p.promptsFS, name)
-		} else {
+		case pass.Prompt != "":
 			tmpl, err = LoadPrompt(pass.Prompt)
+		default:
+			return fmt.Errorf("pass %s: prompt or inline_prompt must be specified", pass.Name)
 		}
 		if err != nil {
 			return fmt.Errorf("load prompt %s: %w", pass.Name, err)
