@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -72,6 +73,12 @@ func envToCUE(env map[string]string) string {
 // LoadConfig loads and validates Cue configuration from multiple files and inline strings.
 // The env map is injected as an env struct accessible in CUE configs.
 func LoadConfig(paths []string, inlineConfigs []string, env map[string]string) (*Config, error) {
+	// Expand globs in paths, restricting matches to .cue files.
+	paths, err := expandGlobs(paths)
+	if err != nil {
+		return nil, err
+	}
+
 	ctx := cuecontext.New()
 
 	// Build overlay with all config files to compile them together
@@ -150,6 +157,29 @@ func LoadConfig(paths []string, inlineConfigs []string, env map[string]string) (
 	}
 
 	return &cfg, nil
+}
+
+// expandGlobs expands glob patterns in paths, filtering results to .cue files.
+// Non-glob paths are passed through as-is.
+func expandGlobs(paths []string) ([]string, error) {
+	var expanded []string
+	for _, p := range paths {
+		if !strings.ContainsAny(p, "*?[") {
+			expanded = append(expanded, p)
+			continue
+		}
+		matches, err := filepath.Glob(p)
+		if err != nil {
+			return nil, fmt.Errorf("invalid glob pattern %q: %w", p, err)
+		}
+		sort.Strings(matches)
+		for _, m := range matches {
+			if filepath.Ext(m) == ".cue" {
+				expanded = append(expanded, m)
+			}
+		}
+	}
+	return expanded, nil
 }
 
 // parsePassNames does a quick standalone parse of a config file to extract

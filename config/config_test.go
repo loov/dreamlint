@@ -179,6 +179,28 @@ func TestLoadConfig_PromptDir_MultipleFiles(t *testing.T) {
 	}
 }
 
+func TestLoadConfig_Glob(t *testing.T) {
+	cfg, err := LoadConfig([]string{"./testdata/project_*/config.cue"}, nil, nil)
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+
+	if len(cfg.Analyse) != 2 {
+		t.Fatalf("analyses count = %d, want 2", len(cfg.Analyse))
+	}
+
+	names := map[string]bool{}
+	for _, pass := range cfg.Analyse {
+		names[pass.Name] = true
+	}
+	if !names["summary"] {
+		t.Error("missing pass: summary")
+	}
+	if !names["security"] {
+		t.Error("missing pass: security")
+	}
+}
+
 func TestLoadConfigEnv(t *testing.T) {
 	cfg, err := LoadConfig(
 		[]string{"./testdata/base.cue"},
