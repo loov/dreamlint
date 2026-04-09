@@ -4,25 +4,35 @@ package config
 
 llm: {
 	provider:    "openai"
-	base_url:    "http://localhost:1234/v1"
-	// qwen3-coder-30b and devstral-2 seem to be good choices,
-	// however the "devstral-2" does not seem to provide good line numbers.
+	// base_url, model, and max_tokens are CUE defaults (string | *"..." / int | *N)
+	// so companion files or inline -c flags can override them without a merge conflict.
+	// A companion file must supply concrete values (model: "gemini-2.5-pro"), not another
+	// default (model: string | *"..."), to avoid a "competing defaults" CUE error.
+	base_url:    string | *"http://localhost:1234/v1"
 	model:       string | *"qwen/qwen3-coder-30b:8bit"
-	max_tokens:  262144
+	api_key:     string | *env.DREAMLINT_API_KEY
+	// Set at the server token ceiling; cloud companion files can override this per-model.
+	// Claude Sonnet 4.6: 64 000 tokens, Gemini 2.5 Pro/Flash: 65 536 tokens
+	max_tokens:  int | *262144
 	temperature: 0.1
 }
 
+// This caches the LLM responses to avoid redundant API calls.
+// These blocks can be omitted entirely unless you need non-default values.
 cache: {
 	dir:     ".dreamlint/cache"
 	enabled: true
 }
 
+// These define the output formats for the lint report.
+// Leave empty any of them that you don't care about.
 output: {
 	json:     "dreamlint-report.json"
 	markdown: "dreamlint-report.md"
 	sarif:    "dreamlint-report.sarif"
 }
 
+// These define the default passes that are built into Dreamlint.
 pass: summary: {
 	prompt:      "builtin:summary"
 	description: "Summarize function behavior for use by other passes"
@@ -53,5 +63,12 @@ pass: maintainability: {
 	description: "Find complexity and readability issues"
 }
 
-// Run only specific analysis passes:
-// analyse: [pass.summary, pass.baseline, pass.correctness]
+
+// By default dreamlint will run all the passes,
+// however you can either specify a subset of passes to run as shown below.
+//
+//   analyse: [pass.summary, pass.baseline, pass.correctness]
+
+// Alternatively, you can add "enabled false" to disable a pass:
+//
+//   pass: security: { enabled: false }

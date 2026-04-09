@@ -38,9 +38,9 @@ package config
 		enabled: bool | *true
 	}
 	output: {
-		json:     string | *"dreamlint-report.json"
-		markdown: string | *"dreamlint-report.md"
-		sarif:    string | *"dreamlint-report.sarif"
+		json:     string | *""
+		markdown: string | *""
+		sarif:    string | *""
 	}
 
 	// env provides environment variables injected from the host.
