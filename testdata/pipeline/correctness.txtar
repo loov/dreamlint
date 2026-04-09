@@ -23,7 +23,11 @@ Analyze this function and respond with JSON in this exact format:
   "security": ["security-relevant properties for callers to know"]
 }
 
-Be precise and concise. Focus on what callers need to know.
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
 
 == prompt 1 ==
@@ -47,7 +51,7 @@ Behavior: test behavior
 
 Error Handling:
 - Ignored errors (assigned to _ or not checked)
-- Missing error wrapping (use fmt.Errorf with %w)
+- Errors propagated without any wrapping or context (use fmt.Errorf with %w, or Op-based domain wrapping if a domain Error type is in use)
 - Panic for recoverable errors
 - Error shadowing in inner scopes
 
@@ -64,6 +68,20 @@ Resource Management:
 - Resources not released on error paths
 - Context cancellation not checked in long operations
 - Missing timeouts on network operations
+
+Error Type Discipline:
+- Lookup-by-ID returning (nil, nil) instead of an ENOTFOUND error
+- External errors (sql.ErrNoRows, os.ErrNotExist) escaping the implementation boundary untranslated
+- Leaf errors carrying both Code and Err (leaf: Code+Message only; wrapping: Op+Err only)
+- Missing Op wrap on significant function boundaries
+
+SQL / Data Access:
+- rows.Close() not deferred immediately after a successful QueryContext call
+- Result slice initialized with var (encodes as JSON null) instead of make([]*T, 0)
+- rows.Err() not checked after the iteration loop
+- Caller-supplied strings interpolated directly into SQL ORDER BY or WHERE clauses
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
 
 Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
 

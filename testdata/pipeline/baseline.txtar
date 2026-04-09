@@ -23,11 +23,15 @@ Analyze this function and respond with JSON in this exact format:
   "security": ["security-relevant properties for callers to know"]
 }
 
-Be precise and concise. Focus on what callers need to know.
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
 
 == prompt 1 ==
-You are reviewing Go code for common issues and mistakes.
+You are reviewing Go code for logical correctness.
 
 ```go
 // Add adds two numbers.
@@ -39,7 +43,31 @@ func Add(a, b int) int {
 }
 ```
 
-Is this function correct?
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
 
 Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
 
