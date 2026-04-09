@@ -1,6 +1,7 @@
 package config
 
 import (
+	"path/filepath"
 	"testing"
 )
 
@@ -131,6 +132,50 @@ func TestLoadConfigInline(t *testing.T) {
 	// Model should be overridden by inline config
 	if cfg.LLM.Model != "claude-3" {
 		t.Errorf("model = %s, want claude-3", cfg.LLM.Model)
+	}
+}
+
+func TestLoadConfig_PromptDir(t *testing.T) {
+	cfg, err := LoadConfig([]string{"./testdata/project_a/config.cue"}, nil, nil)
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+
+	absDir, _ := filepath.Abs("./testdata/project_a")
+	if len(cfg.Analyse) != 1 {
+		t.Fatalf("analyses count = %d, want 1", len(cfg.Analyse))
+	}
+	if cfg.Analyse[0].PromptDir != absDir {
+		t.Errorf("prompt_dir = %s, want %s", cfg.Analyse[0].PromptDir, absDir)
+	}
+}
+
+func TestLoadConfig_PromptDir_MultipleFiles(t *testing.T) {
+	cfg, err := LoadConfig([]string{
+		"./testdata/project_a/config.cue",
+		"./testdata/project_b/config.cue",
+	}, nil, nil)
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+
+	absDirA, _ := filepath.Abs("./testdata/project_a")
+	absDirB, _ := filepath.Abs("./testdata/project_b")
+
+	if len(cfg.Analyse) != 2 {
+		t.Fatalf("analyses count = %d, want 2", len(cfg.Analyse))
+	}
+
+	dirs := map[string]string{}
+	for _, pass := range cfg.Analyse {
+		dirs[pass.Name] = pass.PromptDir
+	}
+
+	if dirs["summary"] != absDirA {
+		t.Errorf("summary prompt_dir = %s, want %s", dirs["summary"], absDirA)
+	}
+	if dirs["security"] != absDirB {
+		t.Errorf("security prompt_dir = %s, want %s", dirs["security"], absDirB)
 	}
 }
 

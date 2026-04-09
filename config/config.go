@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -51,6 +52,7 @@ type AnalysisPass struct {
 	Name         string     `json:"name"`
 	Prompt       string     `json:"prompt,omitempty"`
 	InlinePrompt string     `json:"inline_prompt,omitempty"`
+	PromptDir    string     `json:"prompt_dir,omitempty"`
 	Enabled      bool       `json:"enabled"`
 	LLM          *LLMConfig `json:"llm,omitempty"`
 }
@@ -78,15 +80,28 @@ func LoadConfig(paths []string, inlineConfigs []string, env map[string]string) (
 	// Add schema to overlay
 	overlay["/schema.cue"] = load.FromString(schemaCue)
 
-	// Read and add all config files to overlay
+	// Read and add all config files to overlay.
+	// Each file gets _config_dir appended so the schema can default
+	// prompt_dir for passes defined in the config.
 	for i, path := range paths {
 		data, err := os.ReadFile(path)
 		if err != nil {
 			return nil, fmt.Errorf("read config %s: %w", path, err)
 		}
-		// Use virtual paths to avoid filesystem dependencies
+		abs, err := filepath.Abs(path)
+		if err != nil {
+			return nil, fmt.Errorf("abs path %s: %w", path, err)
+		}
+		dir := filepath.Dir(abs)
+		// Pre-parse the file to discover which passes it defines,
+		// then inject prompt_dir for those specific passes.
+		content := string(data)
+		passNames := parsePassNames(ctx, data)
+		for _, name := range passNames {
+			content += fmt.Sprintf("\npass: %s: prompt_dir: string | *%s\n", name, strconv.Quote(dir))
+		}
 		virtualPath := fmt.Sprintf("/config_%d.cue", i)
-		overlay[virtualPath] = load.FromBytes(data)
+		overlay[virtualPath] = load.FromString(content)
 	}
 
 	// Add inline configs to overlay
@@ -133,5 +148,28 @@ func LoadConfig(paths []string, inlineConfigs []string, env map[string]string) (
 	if err := unified.Decode(&cfg); err != nil {
 		return nil, fmt.Errorf("decode config: %w", err)
 	}
+
 	return &cfg, nil
+}
+
+// parsePassNames does a quick standalone parse of a config file to extract
+// the pass names it defines. Returns nil if the file can't be parsed alone.
+func parsePassNames(ctx *cue.Context, data []byte) []string {
+	val := ctx.CompileBytes(data)
+	if val.Err() != nil {
+		return nil
+	}
+	passVal := val.LookupPath(cue.ParsePath("pass"))
+	if !passVal.Exists() {
+		return nil
+	}
+	iter, err := passVal.Fields()
+	if err != nil {
+		return nil
+	}
+	var names []string
+	for iter.Next() {
+		names = append(names, iter.Selector().String())
+	}
+	return names
 }

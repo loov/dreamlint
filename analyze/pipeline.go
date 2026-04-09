@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"path/filepath"
 	"strings"
 	"text/template"
 
@@ -87,7 +88,11 @@ func (p *Pipeline) LoadPrompts() error {
 			name := strings.TrimPrefix(pass.Prompt, "builtin:")
 			tmpl, err = LoadPromptFromFS(p.promptsFS, name)
 		case pass.Prompt != "":
-			tmpl, err = LoadPrompt(pass.Prompt)
+			prompt := pass.Prompt
+			if pass.PromptDir != "" && !strings.HasPrefix(prompt, "builtin:") && !filepath.IsAbs(prompt) {
+				prompt = filepath.Join(pass.PromptDir, prompt)
+			}
+			tmpl, err = LoadPrompt(prompt)
 		default:
 			return fmt.Errorf("pass %s: prompt or inline_prompt must be specified", pass.Name)
 		}

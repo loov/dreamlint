@@ -24,6 +24,8 @@ package config
 	prompt?: string
 	// inline_prompt specifies the prompt template inline.
 	inline_prompt?: string
+	// prompt_dir specifies the base directory for resolving relative prompt paths.
+	prompt_dir?: string
 	// description specifies the description for the analysis pass.
 	description: string | *""
 	// enabled specifies whether the analysis pass is enabled.
