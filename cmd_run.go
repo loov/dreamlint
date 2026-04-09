@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/mattn/go-isatty"
@@ -44,6 +45,7 @@ func (c *cmdRun) Setup(params clingy.Parameters) {
 
 	c.resume = params.Flag("resume", "resume from existing partial report", false,
 		clingy.Boolean,
+		clingy.Transform(strconv.ParseBool),
 	).(bool)
 
 	c.promptsDir = params.Flag("prompts", "directory to load prompts from", "").(string)
