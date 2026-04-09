@@ -83,7 +83,7 @@ func printProgress(format string, args ...any) {
 
 func run(configPaths, inlineConfigs []string, format string, resume bool, promptsDir string, patterns []string) error {
 	// Load config
-	cfg, err := config.LoadConfig(configPaths, inlineConfigs)
+	cfg, err := config.LoadConfig(configPaths, inlineConfigs, nil)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}

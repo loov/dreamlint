@@ -9,7 +9,7 @@ package config
 	// model specifies the model to be used by the Language Model.
 	model: string
 	// api_key specifies the API key for the Language Model provider.
-	api_key?: string
+	api_key?: string | *env.DREAMLINT_API_KEY
 	// max_tokens specifies the maximum number of tokens to be used by the Language Model.
 	max_tokens: int | *4096
 	// temperature specifies the temperature to be used by the Language Model.
@@ -42,6 +42,9 @@ package config
 		markdown: string | *"dreamlint-report.md"
 		sarif:    string | *"dreamlint-report.sarif"
 	}
+
+	// env provides environment variables injected from the host.
+	env: {[string]: string}
 
 	// pass allows definining set of passes that will be all loaded.
 	pass: {[Name=string]: {{#AnalysisPass} & {name: Name}}}

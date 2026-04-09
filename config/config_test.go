@@ -5,7 +5,7 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	cfg, err := LoadConfig([]string{"./testdata/simple.cue"}, nil)
+	cfg, err := LoadConfig([]string{"./testdata/simple.cue"}, nil, nil)
 	if err != nil {
 		t.Fatalf("LoadConfig: %v", err)
 	}
@@ -27,7 +27,7 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadConfig_Auto(t *testing.T) {
-	cfg, err := LoadConfig([]string{"./testdata/auto.cue"}, nil)
+	cfg, err := LoadConfig([]string{"./testdata/auto.cue"}, nil, nil)
 	if err != nil {
 		t.Fatalf("LoadConfig: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestLoadConfig_Auto_Specify(t *testing.T) {
 	cfg, err := LoadConfig([]string{"./testdata/auto.cue", "./testdata/auto.cue"},
 		[]string{
 			"analyse: [pass.security]",
-		})
+		}, nil)
 	if err != nil {
 		t.Fatalf("LoadConfig: %v", err)
 	}
@@ -77,7 +77,7 @@ func TestLoadConfig_Auto_SpecifyInline(t *testing.T) {
 	cfg, err := LoadConfig([]string{"./testdata/auto.cue"},
 		[]string{
 			"analyse: [pass.security]",
-		})
+		}, nil)
 	if err != nil {
 		t.Fatalf("LoadConfig: %v", err)
 	}
@@ -102,7 +102,7 @@ func TestLoadConfigMultipleFiles(t *testing.T) {
 	cfg, err := LoadConfig([]string{
 		"./testdata/base.cue",
 		"./testdata/override.cue",
-	}, nil)
+	}, nil, nil)
 	if err != nil {
 		t.Fatalf("LoadConfig: %v", err)
 	}
@@ -122,6 +122,7 @@ func TestLoadConfigInline(t *testing.T) {
 	cfg, err := LoadConfig(
 		[]string{"./testdata/base.cue"},
 		[]string{`llm: { model: "claude-3" }`},
+		nil,
 	)
 	if err != nil {
 		t.Fatalf("LoadConfig: %v", err)
@@ -130,5 +131,20 @@ func TestLoadConfigInline(t *testing.T) {
 	// Model should be overridden by inline config
 	if cfg.LLM.Model != "claude-3" {
 		t.Errorf("model = %s, want claude-3", cfg.LLM.Model)
+	}
+}
+
+func TestLoadConfigEnv(t *testing.T) {
+	cfg, err := LoadConfig(
+		[]string{"./testdata/base.cue"},
+		[]string{`llm: { api_key: env.MY_API_KEY }`},
+		map[string]string{"MY_API_KEY": "test-secret-key"},
+	)
+	if err != nil {
+		t.Fatalf("LoadConfig: %v", err)
+	}
+
+	if cfg.LLM.APIKey != "test-secret-key" {
+		t.Errorf("api_key = %s, want test-secret-key", cfg.LLM.APIKey)
 	}
 }

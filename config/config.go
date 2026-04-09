@@ -4,6 +4,8 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
@@ -52,17 +54,22 @@ type AnalysisPass struct {
 	LLM     *LLMConfig `json:"llm,omitempty"`
 }
 
-// LoadConfig loads and validates Cue configuration from multiple files and inline strings.
-func LoadConfig(paths []string, inlineConfigs []string) (*Config, error) {
-	ctx := cuecontext.New()
-
-	// Load schema
-	schemaVal := ctx.CompileString(schemaCue)
-	if schemaVal.Err() != nil {
-		return nil, fmt.Errorf("compile schema: %w", schemaVal.Err())
+// envToCUE generates a CUE source file that defines an env struct
+// with the provided key-value pairs.
+func envToCUE(env map[string]string) string {
+	var b strings.Builder
+	b.WriteString("package config\n\nenv: {\n")
+	for k, v := range env {
+		fmt.Fprintf(&b, "\t%s: %s\n", strconv.Quote(k), strconv.Quote(v))
 	}
+	b.WriteString("}\n")
+	return b.String()
+}
 
-	schema := schemaVal.LookupPath(cue.ParsePath("#Config"))
+// LoadConfig loads and validates Cue configuration from multiple files and inline strings.
+// The env map is injected as an env struct accessible in CUE configs.
+func LoadConfig(paths []string, inlineConfigs []string, env map[string]string) (*Config, error) {
+	ctx := cuecontext.New()
 
 	// Build overlay with all config files to compile them together
 	overlay := make(map[string]load.Source)
@@ -88,6 +95,12 @@ func LoadConfig(paths []string, inlineConfigs []string) (*Config, error) {
 		overlay[virtualPath] = load.FromString(prefixed)
 	}
 
+	// Add env vars to overlay (always present so schema can reference env)
+	if env == nil {
+		env = map[string]string{}
+	}
+	overlay["/env.cue"] = load.FromString(envToCUE(env))
+
 	// Load all files together as a single instance
 	cfg_load := &load.Config{
 		Dir:     "/",
@@ -106,6 +119,9 @@ func LoadConfig(paths []string, inlineConfigs []string) (*Config, error) {
 		return nil, fmt.Errorf("build config: %w", err)
 	}
 
+	// Extract #Config schema from the built instance (which includes env)
+	// and unify it with the config values.
+	schema := values[0].LookupPath(cue.ParsePath("#Config"))
 	unified := schema.Unify(values[0])
 	if unified.Err() != nil {
 		return nil, fmt.Errorf("unify config with schema: %w", unified.Err())
