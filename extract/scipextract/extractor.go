@@ -56,9 +56,18 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 
 	src := newSourceCache(root)
 
+	// Pass 1: identify function symbols and assign ids. No body extraction
+	// yet — we need the per-doc definition ranges (computed in pass 2)
+	// before we can pick the right span for each function.
+	type entry struct {
+		info    *scip.SymbolInformation
+		doc     *scip.Document
+		absPath string
+		fn      *extract.FunctionInfo
+	}
+	var entries []entry
 	var funcs []*extract.FunctionInfo
 	symbolToID := make(map[string]string)
-
 	for _, doc := range docs {
 		absPath := filepath.Join(root, doc.RelativePath)
 		for _, sym := range doc.Symbols {
@@ -68,22 +77,33 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 			if _, dup := symbolToID[sym.Symbol]; dup {
 				continue
 			}
-
 			fn := buildFunctionInfo(sym, doc, absPath)
 			if fn == nil {
 				continue
 			}
-			body, warn := extractBody(sym, doc, absPath, src)
-			fn.Body = body
-			if warn != "" {
-				fmt.Fprintf(os.Stderr, "scipextract: %s\n", warn)
-			}
-			funcs = append(funcs, fn)
 			symbolToID[sym.Symbol] = functionID(fn)
+			entries = append(entries, entry{info: sym, doc: doc, absPath: absPath, fn: fn})
+			funcs = append(funcs, fn)
 		}
 	}
 
-	graph, external := buildCallgraph(docs, &index, funcs, symbolToID)
+	// Pass 2: per-doc definition ranges (with span-to-next-function fallback).
+	docRanges := make(map[*scip.Document]map[string]scip.Range, len(docs))
+	for _, doc := range docs {
+		docRanges[doc] = definitionRanges(doc, symbolToID)
+	}
+
+	// Pass 3: bodies use the shared ranges so indexers without
+	// EnclosingRange (e.g. scip-clang) still get useful function bodies.
+	for _, e := range entries {
+		body, warn := extractBody(e.info, e.doc, e.absPath, docRanges[e.doc], src)
+		e.fn.Body = body
+		if warn != "" {
+			fmt.Fprintf(os.Stderr, "scipextract: %s\n", warn)
+		}
+	}
+
+	graph, external := buildCallgraph(docs, &index, docRanges, symbolToID)
 	units := extract.BuildAnalysisUnits(funcs, graph)
 
 	return &extract.Result{

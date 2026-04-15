@@ -1,7 +1,9 @@
 package scipextract
 
 import (
+	"math"
 	"slices"
+	"sort"
 	"strings"
 
 	"github.com/scip-code/scip/bindings/go/scip"
@@ -20,10 +22,10 @@ import (
 func buildCallgraph(
 	docs []*scip.Document,
 	index *scip.Index,
-	funcs []*extract.FunctionInfo,
+	docRanges map[*scip.Document]map[string]scip.Range,
 	symbolToID map[string]string,
 ) (map[string][]string, map[string]*extract.ExternalFunc) {
-	graph := make(map[string][]string, len(funcs))
+	graph := make(map[string][]string, len(symbolToID))
 	for _, id := range symbolToID {
 		if _, ok := graph[id]; !ok {
 			graph[id] = nil
@@ -34,7 +36,7 @@ func buildCallgraph(
 	external := make(map[string]*extract.ExternalFunc)
 
 	for _, doc := range docs {
-		defRanges := definitionRanges(doc)
+		defRanges := docRanges[doc]
 		for _, sym := range doc.Symbols {
 			callerID, ok := symbolToID[sym.Symbol]
 			if !ok {
@@ -89,11 +91,26 @@ func buildCallgraph(
 	return graph, external
 }
 
-// definitionRanges returns a map from function symbol to its enclosing range
-// (or the definition range as a fallback) for every function-like symbol
-// defined in doc.
-func definitionRanges(doc *scip.Document) map[string]scip.Range {
-	out := make(map[string]scip.Range)
+// definitionRanges returns a map from function symbol to the source range
+// that should be considered "inside" that function for callgraph purposes.
+//
+// Preferred: the occurrence's EnclosingRange. Some indexers (notably
+// scip-clang) don't emit EnclosingRange, in which case we fall back to a
+// "span to next function" heuristic: the definition range of function F
+// extends until the next function definition in the same document. This
+// recovers useful call edges for top-level functions but will mis-attribute
+// calls in nested functions.
+//
+// Only symbols present in internal are considered — this keeps file/
+// namespace definitions from segmenting the per-function spans.
+func definitionRanges(doc *scip.Document, internal map[string]string) map[string]scip.Range {
+	type entry struct {
+		sym          string
+		r            scip.Range
+		hasEnclosing bool
+	}
+	var entries []entry
+	seen := make(map[string]bool)
 	for _, occ := range doc.Occurrences {
 		if occ.SymbolRoles&int32(scip.SymbolRole_Definition) == 0 {
 			continue
@@ -101,18 +118,47 @@ func definitionRanges(doc *scip.Document) map[string]scip.Range {
 		if occ.Symbol == "" {
 			continue
 		}
-		if _, exists := out[occ.Symbol]; exists {
+		if _, ok := internal[occ.Symbol]; !ok {
 			continue
 		}
+		if seen[occ.Symbol] {
+			continue
+		}
+		seen[occ.Symbol] = true
+
+		var r scip.Range
+		hasEnc := false
 		if len(occ.EnclosingRange) > 0 {
-			if r, err := scip.NewRange(occ.EnclosingRange); err == nil {
-				out[occ.Symbol] = r
-				continue
+			if rr, err := scip.NewRange(occ.EnclosingRange); err == nil {
+				r = rr
+				hasEnc = true
 			}
 		}
-		if r, err := scip.NewRange(occ.Range); err == nil {
-			out[occ.Symbol] = r
+		if !hasEnc {
+			rr, err := scip.NewRange(occ.Range)
+			if err != nil {
+				continue
+			}
+			r = rr
 		}
+		entries = append(entries, entry{sym: occ.Symbol, r: r, hasEnclosing: hasEnc})
+	}
+
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].r.Start.Less(entries[j].r.Start)
+	})
+
+	out := make(map[string]scip.Range, len(entries))
+	for i, e := range entries {
+		if !e.hasEnclosing {
+			if i+1 < len(entries) {
+				// Stop at the start of the next function's line, exclusive.
+				e.r.End = scip.Position{Line: entries[i+1].r.Start.Line}
+			} else {
+				e.r.End = scip.Position{Line: math.MaxInt32}
+			}
+		}
+		out[e.sym] = e.r
 	}
 	return out
 }

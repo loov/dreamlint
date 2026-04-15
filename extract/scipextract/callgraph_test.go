@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	"github.com/scip-code/scip/bindings/go/scip"
-
-	"github.com/loov/dreamlint/extract"
 )
 
 func TestBuildCallgraph_InternalEdge(t *testing.T) {
@@ -43,16 +41,15 @@ func TestBuildCallgraph_InternalEdge(t *testing.T) {
 		},
 	}
 
-	funcs := []*extract.FunctionInfo{
-		{Package: "example", Name: "a"},
-		{Package: "example", Name: "b"},
-	}
 	symToID := map[string]string{
 		aSym: "example.a",
 		bSym: "example.b",
 	}
+	docRanges := map[*scip.Document]map[string]scip.Range{
+		doc: definitionRanges(doc, symToID),
+	}
 
-	graph, external := buildCallgraph([]*scip.Document{doc}, &scip.Index{}, funcs, symToID)
+	graph, external := buildCallgraph([]*scip.Document{doc}, &scip.Index{}, docRanges, symToID)
 	if got := graph["example.a"]; !slices.Contains(got, "example.b") {
 		t.Errorf("expected a -> b edge, got %v", got)
 	}
@@ -102,10 +99,12 @@ func TestBuildCallgraph_ExternalRef(t *testing.T) {
 		},
 	}
 
-	funcs := []*extract.FunctionInfo{{Package: "example", Name: "a"}}
 	symToID := map[string]string{aSym: "example.a"}
+	docRanges := map[*scip.Document]map[string]scip.Range{
+		doc: definitionRanges(doc, symToID),
+	}
 
-	graph, external := buildCallgraph([]*scip.Document{doc}, index, funcs, symToID)
+	graph, external := buildCallgraph([]*scip.Document{doc}, index, docRanges, symToID)
 
 	id := externalID(extSym)
 	if !slices.Contains(graph["example.a"], id) {

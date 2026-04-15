@@ -33,33 +33,28 @@ func (c *sourceCache) get(absPath string) []byte {
 
 // extractBody returns the source text for a function's body and an
 // optional warning message describing any fallback that was taken.
-// Resolution order:
 //
-//  1. The definition occurrence's EnclosingRange (the most accurate form).
-//  2. The definition range alone, sliced from Document.Text if the indexer
-//     embedded it.
-//  3. The definition range alone, read from disk.
-//
-// Only case 1 reliably gives the full implementation. Cases 2 and 3 emit
-// a warning because the LLM will only see the signature line(s).
-func extractBody(info *scip.SymbolInformation, doc *scip.Document, absPath string, cache *sourceCache) (string, string) {
+// docRanges is the per-document map produced by definitionRanges — it
+// carries either the SCIP EnclosingRange (when the indexer emits one) or a
+// heuristic span-to-next-function range. The warning is non-empty when we
+// had to rely on the heuristic.
+func extractBody(info *scip.SymbolInformation, doc *scip.Document, absPath string, docRanges map[string]scip.Range, cache *sourceCache) (string, string) {
+	r, ok := docRanges[info.Symbol]
+	if !ok {
+		return "", fmt.Sprintf("no definition range for %s", info.Symbol)
+	}
+
 	defOcc := findDefinition(info.Symbol, doc)
-	if defOcc == nil {
-		return "", fmt.Sprintf("no definition occurrence for %s", info.Symbol)
-	}
+	synthetic := defOcc == nil || len(defOcc.EnclosingRange) == 0
 
-	if len(defOcc.EnclosingRange) > 0 {
-		body, ok := sliceRangeFromSource(defOcc.EnclosingRange, doc, absPath, cache)
-		if ok {
-			return body, ""
-		}
-	}
-
-	body, ok := sliceRangeFromSource(defOcc.Range, doc, absPath, cache)
+	body, ok := sliceRange(r, doc, absPath, cache)
 	if !ok {
 		return "", fmt.Sprintf("failed to read source for %s at %s", info.Symbol, absPath)
 	}
-	return body, fmt.Sprintf("no enclosing range for %s; body truncated to signature", info.Symbol)
+	if synthetic {
+		return body, fmt.Sprintf("no enclosing range for %s; extracted by span-to-next-function heuristic", info.Symbol)
+	}
+	return body, ""
 }
 
 // findDefinition returns the first occurrence of symbol in doc with the
@@ -76,17 +71,13 @@ func findDefinition(symbol string, doc *scip.Document) *scip.Occurrence {
 	return nil
 }
 
-// sliceRangeFromSource extracts the text covered by scipRange. It prefers
-// Document.Text when the indexer embedded it; otherwise it reads from disk
-// via the cache. Returns (text, true) on success.
-func sliceRangeFromSource(scipRange []int32, doc *scip.Document, absPath string, cache *sourceCache) (string, bool) {
-	r, err := scip.NewRange(scipRange)
-	if err != nil {
-		return "", false
-	}
-
+// sliceRange extracts the text covered by r. It prefers Document.Text when
+// the indexer embedded it; otherwise it reads from disk via the cache.
+// Returns (text, true) on success. SCIP ranges are half-open, so an End
+// position with Character == 0 excludes End.Line from the slice.
+func sliceRange(r scip.Range, doc *scip.Document, absPath string, cache *sourceCache) (string, bool) {
 	if doc.Text != "" {
-		if s, ok := sliceLines(doc.Text, int(r.Start.Line), int(r.End.Line)); ok {
+		if s, ok := sliceLinesHalfOpen(doc.Text, r); ok {
 			return s, true
 		}
 	}
@@ -95,16 +86,21 @@ func sliceRangeFromSource(scipRange []int32, doc *scip.Document, absPath string,
 	if content == nil {
 		return "", false
 	}
-	return sliceLines(string(content), int(r.Start.Line), int(r.End.Line))
+	return sliceLinesHalfOpen(string(content), r)
 }
 
-// sliceLines returns the substring covering startLine..endLine inclusive,
-// using 0-based line indices. endLine may equal startLine for single-line
-// ranges. Returns (text, true) on success.
-func sliceLines(text string, startLine, endLine int) (string, bool) {
+// sliceLinesHalfOpen returns the substring covering r using line-level
+// half-open semantics: lines [r.Start.Line .. r.End.Line] are included when
+// r.End.Character > 0; otherwise r.End.Line is excluded.
+func sliceLinesHalfOpen(text string, r scip.Range) (string, bool) {
 	lines := strings.SplitAfter(text, "\n")
+	startLine := int(r.Start.Line)
 	if startLine < 0 || startLine >= len(lines) {
 		return "", false
+	}
+	endLine := int(r.End.Line)
+	if r.End.Character == 0 {
+		endLine--
 	}
 	if endLine >= len(lines) {
 		endLine = len(lines) - 1
