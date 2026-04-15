@@ -57,7 +57,7 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 	src := newSourceCache(root)
 
 	var funcs []*extract.FunctionInfo
-	seen := make(map[string]bool)
+	symbolToID := make(map[string]string)
 
 	for _, doc := range docs {
 		absPath := filepath.Join(root, doc.RelativePath)
@@ -65,10 +65,9 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 			if !isFunctionSymbol(sym) {
 				continue
 			}
-			if seen[sym.Symbol] {
+			if _, dup := symbolToID[sym.Symbol]; dup {
 				continue
 			}
-			seen[sym.Symbol] = true
 
 			fn := buildFunctionInfo(sym, doc, absPath)
 			if fn == nil {
@@ -80,21 +79,16 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 				fmt.Fprintf(os.Stderr, "scipextract: %s\n", warn)
 			}
 			funcs = append(funcs, fn)
+			symbolToID[sym.Symbol] = functionID(fn)
 		}
 	}
 
-	// Step 4: no call graph yet — one unit per function with empty callees.
-	// Build an empty graph so BuildAnalysisUnits creates singleton SCCs.
-	graph := make(map[string][]string, len(funcs))
-	for _, fn := range funcs {
-		graph[functionID(fn)] = nil
-	}
-
+	graph, external := buildCallgraph(docs, &index, funcs, symbolToID)
 	units := extract.BuildAnalysisUnits(funcs, graph)
 
 	return &extract.Result{
 		Units:    units,
-		External: nil,
+		External: external,
 		Language: pickLanguage(docs),
 	}, nil
 }
