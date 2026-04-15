@@ -1,4 +1,4 @@
-package extract
+package goextract
 
 import (
 	"fmt"
@@ -7,19 +7,13 @@ import (
 	"strings"
 
 	"golang.org/x/tools/go/packages"
-)
 
-// ExternalFunc holds shallow info about external dependencies.
-type ExternalFunc struct {
-	Package   string
-	Name      string
-	Signature string
-	Godoc     string
-}
+	"github.com/loov/dreamlint/extract"
+)
 
 // ExtractExternalFuncs finds functions called from the analyzed packages that are
 // defined in external packages (dependencies). Returns a map from function ID to ExternalFunc.
-func ExtractExternalFuncs(p *Packages, graph map[string][]string) map[string]*ExternalFunc {
+func ExtractExternalFuncs(p *Packages, graph map[string][]string) map[string]*extract.ExternalFunc {
 	// Build set of internal package paths
 	internal := make(map[string]bool)
 	for _, pkg := range p.Pkgs {
@@ -45,7 +39,7 @@ func ExtractExternalFuncs(p *Packages, graph map[string][]string) map[string]*Ex
 	allPkgs := collectAllPackages(p.Pkgs)
 
 	// Extract info for each external function
-	result := make(map[string]*ExternalFunc)
+	result := make(map[string]*extract.ExternalFunc)
 	for id := range externalIDs {
 		if ext := extractExternalFunc(id, allPkgs); ext != nil {
 			result[id] = ext
@@ -89,7 +83,7 @@ func collectAllPackages(pkgs []*packages.Package) map[string]*packages.Package {
 }
 
 // extractExternalFunc extracts function info from loaded packages.
-func extractExternalFunc(id string, allPkgs map[string]*packages.Package) *ExternalFunc {
+func extractExternalFunc(id string, allPkgs map[string]*packages.Package) *extract.ExternalFunc {
 	pkgPath := packageFromID(id)
 	pkg, ok := allPkgs[pkgPath]
 	if !ok || pkg.Types == nil {
@@ -102,7 +96,7 @@ func extractExternalFunc(id string, allPkgs map[string]*packages.Package) *Exter
 		return nil
 	}
 
-	ext := &ExternalFunc{
+	ext := &extract.ExternalFunc{
 		Package: pkgPath,
 		Name:    name,
 	}

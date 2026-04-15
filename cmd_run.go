@@ -14,7 +14,7 @@ import (
 	"github.com/loov/dreamlint/analyze"
 	"github.com/loov/dreamlint/cache"
 	"github.com/loov/dreamlint/config"
-	"github.com/loov/dreamlint/extract"
+	"github.com/loov/dreamlint/extract/goextract"
 	"github.com/loov/dreamlint/llm"
 	"github.com/loov/dreamlint/report"
 	"github.com/loov/dreamlint/report/markdown"
@@ -101,7 +101,7 @@ func run(configPaths, inlineConfigs []string, format string, resume bool, prompt
 
 	// Extract analysis units
 	fmt.Println("Extracting analysis units...")
-	ex := &extract.GoExtractor{Dir: ".", Patterns: patterns}
+	ex := &goextract.Extractor{Dir: ".", Patterns: patterns}
 	res, err := ex.Extract(context.Background())
 	if err != nil {
 		return fmt.Errorf("extract: %w", err)

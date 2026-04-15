@@ -13,6 +13,7 @@ import (
 	"github.com/loov/dreamlint/analyze"
 	"github.com/loov/dreamlint/config"
 	"github.com/loov/dreamlint/extract"
+	"github.com/loov/dreamlint/extract/goextract"
 	"github.com/loov/dreamlint/llm"
 	"golang.org/x/tools/txtar"
 )
@@ -84,20 +85,20 @@ func runPipelineGoldenTest(t *testing.T, txtarFile string) {
 	}
 
 	// Load packages from testdata directory
-	pkgs, err := extract.LoadPackages(pkgPattern, "./...")
+	pkgs, err := goextract.LoadPackages(pkgPattern, "./...")
 	if err != nil {
 		t.Fatalf("load packages: %v", err)
 	}
 
 	// Extract functions
-	funcs := extract.ExtractFunctions(pkgs)
+	funcs := goextract.ExtractFunctions(pkgs)
 	if len(funcs) == 0 {
 		t.Fatal("no functions found")
 	}
 
 	// Build callgraph and units
-	graph := extract.BuildCallgraph(pkgs)
-	externalFuncs := extract.ExtractExternalFuncs(pkgs, graph)
+	graph := goextract.BuildCallgraph(pkgs)
+	externalFuncs := goextract.ExtractExternalFuncs(pkgs, graph)
 	units := extract.BuildAnalysisUnits(funcs, graph)
 
 	// Create mock client with summary response

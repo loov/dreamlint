@@ -7,24 +7,25 @@ import (
 	"testing"
 
 	"github.com/loov/dreamlint/extract"
+	"github.com/loov/dreamlint/extract/goextract"
 )
 
 func TestIntegration_FullPipeline(t *testing.T) {
 	// Load packages from testdata
-	pkgs, err := extract.LoadPackages("testdata/testpkg", "./...")
+	pkgs, err := goextract.LoadPackages("testdata/testpkg", "./...")
 	if err != nil {
 		t.Fatalf("LoadPackages: %v", err)
 	}
 
 	// Extract functions
-	funcs := extract.ExtractFunctions(pkgs)
+	funcs := goextract.ExtractFunctions(pkgs)
 
 	if len(funcs) != 2 {
 		t.Fatalf("got %d functions, want 2", len(funcs))
 	}
 
 	// Build callgraph
-	graph := extract.BuildCallgraph(pkgs)
+	graph := goextract.BuildCallgraph(pkgs)
 
 	// Multiply should call Add
 	if !slices.Contains(graph["testpkg.Multiply"], "testpkg.Add") {

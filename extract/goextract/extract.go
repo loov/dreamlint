@@ -1,4 +1,4 @@
-package extract
+package goextract
 
 import (
 	"go/ast"
@@ -8,27 +8,18 @@ import (
 	"strings"
 
 	"golang.org/x/tools/go/packages"
+
+	"github.com/loov/dreamlint/extract"
 )
 
-// FunctionInfo holds information about a single function
-type FunctionInfo struct {
-	Package   string
-	Name      string
-	Receiver  string
-	Signature string
-	Body      string
-	Godoc     string
-	Position  token.Position
-}
-
 // ExtractFunctions extracts all function information from loaded packages.
-func ExtractFunctions(p *Packages) []*FunctionInfo {
+func ExtractFunctions(p *Packages) []*extract.FunctionInfo {
 	return ExtractFunctionsFromPackages(p.Pkgs)
 }
 
 // ExtractFunctionsFromPackages extracts function information from a slice of packages.
-func ExtractFunctionsFromPackages(pkgs []*packages.Package) []*FunctionInfo {
-	var funcs []*FunctionInfo
+func ExtractFunctionsFromPackages(pkgs []*packages.Package) []*extract.FunctionInfo {
+	var funcs []*extract.FunctionInfo
 
 	// Build a map of filename to file content for source extraction
 	fileContents := make(map[string][]byte)
@@ -65,7 +56,7 @@ func ExtractFunctionsFromPackages(pkgs []*packages.Package) []*FunctionInfo {
 				}
 				endPos := fn.End()
 
-				info := &FunctionInfo{
+				info := &extract.FunctionInfo{
 					Package:  pkg.PkgPath,
 					Name:     fn.Name.Name,
 					Position: pkg.Fset.Position(startPos),

@@ -1,9 +1,11 @@
-package extract
+package goextract
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/loov/dreamlint/extract"
 )
 
 func TestExtractFunctions(t *testing.T) {
@@ -43,7 +45,7 @@ func helper() {}
 	}
 
 	// Check Hello function
-	var hello *FunctionInfo
+	var hello *extract.FunctionInfo
 	for _, f := range funcs {
 		if f.Name == "Hello" {
 			hello = f
