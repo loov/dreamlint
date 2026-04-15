@@ -1,0 +1,13 @@
+[package]
+name = "rust_example"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+name = "rust_example"
+path = "src/lib.rs"
+
+[[bin]]
+name = "rust_example"
+path = "src/main.rs"

@@ -40,7 +40,11 @@ func isFunctionSymbol(info *scip.SymbolInformation) bool {
 	if err != nil || len(sym.Descriptors) == 0 {
 		return false
 	}
-	return sym.Descriptors[len(sym.Descriptors)-1].Suffix == scip.Descriptor_Method
+	switch sym.Descriptors[len(sym.Descriptors)-1].Suffix {
+	case scip.Descriptor_Method, scip.Descriptor_Macro:
+		return true
+	}
+	return false
 }
 
 // buildFunctionInfo constructs an extract.FunctionInfo from a function-like

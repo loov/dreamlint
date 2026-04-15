@@ -183,7 +183,10 @@ func buildExternalFunc(symbol string, index *scip.Index) *extract.ExternalFunc {
 		return nil
 	}
 	last := sym.Descriptors[len(sym.Descriptors)-1]
-	if last.Suffix != scip.Descriptor_Method {
+	switch last.Suffix {
+	case scip.Descriptor_Method, scip.Descriptor_Macro:
+		// callable
+	default:
 		return nil
 	}
 

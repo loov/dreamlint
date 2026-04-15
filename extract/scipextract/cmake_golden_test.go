@@ -109,6 +109,7 @@ type unitSummary struct {
 	callees []string
 	body    string
 	godoc   string
+	sig     string
 }
 
 func assertBodyContains(t *testing.T, name, body string, needles ...string) {

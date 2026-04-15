@@ -141,7 +141,9 @@ func filterDocuments(docs []*scip.Document, filters []string) []*scip.Document {
 }
 
 // pickLanguage returns a display-friendly language name derived from the
-// most common Document.Language across the filtered documents.
+// most common Document.Language across the filtered documents. When the
+// indexer leaves Document.Language empty (scip-typescript, for example),
+// fall back to inferring from symbol schemes.
 func pickLanguage(docs []*scip.Document) string {
 	counts := make(map[string]int)
 	for _, doc := range docs {
@@ -150,7 +152,7 @@ func pickLanguage(docs []*scip.Document) string {
 		}
 	}
 	if len(counts) == 0 {
-		return ""
+		return inferLanguageFromScheme(docs)
 	}
 	// Deterministic: pick the highest count, ties broken by name.
 	type kv struct {
@@ -170,21 +172,67 @@ func pickLanguage(docs []*scip.Document) string {
 	return displayLanguage(entries[0].lang)
 }
 
+// inferLanguageFromScheme maps the scheme of the first parseable symbol to
+// a display language. Best-effort — returns "" if no scheme is recognized.
+func inferLanguageFromScheme(docs []*scip.Document) string {
+	for _, doc := range docs {
+		for _, info := range doc.Symbols {
+			sym, err := scip.ParseSymbol(info.Symbol)
+			if err != nil {
+				continue
+			}
+			switch sym.Scheme {
+			case "scip-typescript":
+				return "TypeScript"
+			case "scip-java":
+				return "Java"
+			case "scip-python":
+				return "Python"
+			case "scip-ruby":
+				return "Ruby"
+			case "rust-analyzer":
+				return "Rust"
+			case "scip-go":
+				return "Go"
+			case "scip-clang":
+				return "C++"
+			}
+		}
+	}
+	return ""
+}
+
 // displayLanguage maps SCIP Language enum strings to human-readable names.
+// Indexers are inconsistent about case (scip-clang emits "CPP",
+// rust-analyzer emits lowercase "rust"), so normalize here.
 func displayLanguage(scipLang string) string {
-	switch scipLang {
-	case "CPP":
+	switch strings.ToLower(scipLang) {
+	case "cpp":
 		return "C++"
-	case "CSharp":
+	case "csharp":
 		return "C#"
-	case "ObjectiveC":
+	case "objectivec":
 		return "Objective-C"
-	case "ObjectiveCpp":
+	case "objectivecpp":
 		return "Objective-C++"
-	case "JavaScript":
+	case "javascript":
 		return "JavaScript"
-	case "TypeScript":
+	case "typescript":
 		return "TypeScript"
+	case "go":
+		return "Go"
+	case "rust":
+		return "Rust"
+	case "java":
+		return "Java"
+	case "kotlin":
+		return "Kotlin"
+	case "python":
+		return "Python"
+	case "ruby":
+		return "Ruby"
+	case "c":
+		return "C"
 	}
 	return scipLang
 }
