@@ -11,3 +11,39 @@ export function multiply(a: number, b: number): number {
     }
     return result;
 }
+
+/** Counter accumulates bumps into a running total. */
+export class Counter {
+    private n: number;
+
+    constructor() {
+        this.n = 0;
+    }
+
+    /** Increments the counter and returns the new value. */
+    bump(): number {
+        this.n = add(this.n, 1);
+        return this.n;
+    }
+
+    /** Returns the current counter value. */
+    value(): number {
+        return this.n;
+    }
+}
+
+/** Mutual recursion: isEven delegates to isOdd. */
+export function isEven(n: number): boolean {
+    if (n === 0) {
+        return true;
+    }
+    return isOdd(n - 1);
+}
+
+/** Mutual recursion: isOdd delegates to isEven. */
+export function isOdd(n: number): boolean {
+    if (n === 0) {
+        return false;
+    }
+    return isEven(n - 1);
+}

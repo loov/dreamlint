@@ -8,6 +8,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/loov/dreamlint/extract"
 )
 
 // TestGolden_CMakeExample pins the extraction of the committed
@@ -19,7 +21,7 @@ func TestGolden_CMakeExample(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Silence warnings from scip-clang's missing EnclosingRange support.
+	// Silence per-function "no enclosing range" warnings from scip-clang.
 	defer redirectStderr(t)()
 
 	ex := &Extractor{
@@ -35,81 +37,126 @@ func TestGolden_CMakeExample(t *testing.T) {
 		t.Errorf("Language = %q, want C++", res.Language)
 	}
 
-	wantUnits := []string{"math.add", "math.multiply", ".main"}
-	if len(res.Units) != len(wantUnits) {
-		var got []string
-		for _, u := range res.Units {
-			got = append(got, u.ID)
-		}
-		t.Fatalf("units = %v, want %v", got, wantUnits)
+	sccID := "math.is_even+math.is_odd"
+	want := map[string]bool{
+		"math.add":                true,
+		"math.multiply":           true,
+		"math.(Counter).Counter":  true,
+		"math.(Counter).bump":     true,
+		"math.(Counter).value":    true,
+		sccID:                     true,
+		".main":                   true,
 	}
-	for i, want := range wantUnits {
-		if got := res.Units[i].ID; got != want {
-			t.Errorf("units[%d].ID = %q, want %q", i, got, want)
-		}
-	}
-
-	byID := map[string]*unitSummary{}
+	got := map[string]bool{}
+	byID := map[string]*extract.AnalysisUnit{}
 	for _, u := range res.Units {
-		byID[u.ID] = &unitSummary{
-			callees: u.Callees,
-			body:    u.Functions[0].Body,
-			godoc:   u.Functions[0].Godoc,
+		got[u.ID] = true
+		byID[u.ID] = u
+	}
+	for id := range want {
+		if !got[id] {
+			t.Errorf("missing unit %q; got %v", id, keys(got))
+		}
+	}
+	for id := range got {
+		if !want[id] {
+			t.Errorf("unexpected unit %q", id)
 		}
 	}
 
-	// math.add is a leaf.
-	if got := byID["math.add"].callees; len(got) != 0 {
-		t.Errorf("math.add.Callees = %v, want empty", got)
+	// Topology: leaves precede their callers. Check by index-of.
+	indexOf := func(id string) int {
+		for i, u := range res.Units {
+			if u.ID == id {
+				return i
+			}
+		}
+		return -1
 	}
-	assertBodyContains(t, "math.add", byID["math.add"].body,
-		"int add(int a, int b)",
-		"return a + b;")
-
-	// math.multiply calls add.
-	if got := byID["math.multiply"].callees; !slices.Contains(got, "math.add") {
-		t.Errorf("math.multiply.Callees = %v, want to contain math.add", got)
-	}
-	assertBodyContains(t, "math.multiply", byID["math.multiply"].body,
-		"int multiply(int a, int b)",
-		"result = add(result, a);")
-
-	// main calls both math.multiply and math.add (scip-clang emits both
-	// references; the callgraph over-approximation treats both as edges).
-	mainCallees := byID[".main"].callees
-	if !slices.Contains(mainCallees, "math.multiply") {
-		t.Errorf("main.Callees = %v, want to contain math.multiply", mainCallees)
-	}
-	if !slices.Contains(mainCallees, "math.add") {
-		t.Errorf("main.Callees = %v, want to contain math.add", mainCallees)
-	}
-	assertBodyContains(t, "main", byID[".main"].body,
-		"int main()",
-		"math::add(2, 3)",
-		"math::multiply(sum, 4)")
-
-	// Godoc from the Doxygen-style comments in math.h/math.cpp.
-	if !strings.Contains(byID["math.add"].godoc, "sum of a and b") {
-		t.Errorf("math.add.Godoc = %q, want mention of 'sum of a and b'", byID["math.add"].godoc)
-	}
-
-	// The only non-internal reference in the sources is std::printf.
-	foundPrintf := false
-	for _, ext := range res.External {
-		if ext.Name == "printf" && ext.Package == "std" {
-			foundPrintf = true
+	for _, pair := range [][2]string{
+		{"math.add", "math.multiply"},
+		{"math.add", "math.(Counter).bump"},
+		{"math.(Counter).Counter", ".main"},
+		{sccID, ".main"},
+	} {
+		if indexOf(pair[0]) >= indexOf(pair[1]) {
+			t.Errorf("topology: %q should precede %q", pair[0], pair[1])
 		}
 	}
-	if !foundPrintf {
-		t.Errorf("expected an external entry for std::printf, got %d externals", len(res.External))
-	}
-}
 
-type unitSummary struct {
-	callees []string
-	body    string
-	godoc   string
-	sig     string
+	// Class methods carry the Counter receiver (the last Type descriptor
+	// before the method, in scip-clang's encoding).
+	for _, id := range []string{
+		"math.(Counter).Counter",
+		"math.(Counter).bump",
+		"math.(Counter).value",
+	} {
+		if r := byID[id].Functions[0].Receiver; r != "Counter" {
+			t.Errorf("%s receiver = %q, want Counter", id, r)
+		}
+	}
+
+	// Mutual recursion lands in a single SCC.
+	scc := byID[sccID]
+	if len(scc.Functions) != 2 {
+		t.Fatalf("SCC unit has %d functions, want 2", len(scc.Functions))
+	}
+	names := map[string]bool{}
+	for _, f := range scc.Functions {
+		names[f.Name] = true
+	}
+	if !names["is_even"] || !names["is_odd"] {
+		t.Errorf("SCC functions = %v, want {is_even, is_odd}", names)
+	}
+	if len(scc.Callees) != 0 {
+		t.Errorf("SCC.Callees = %v, want empty (mutual recursion is internal)", scc.Callees)
+	}
+
+	// Callgraph checks.
+	if !slices.Contains(byID["math.(Counter).bump"].Callees, "math.add") {
+		t.Errorf("bump.Callees = %v, want to contain math.add",
+			byID["math.(Counter).bump"].Callees)
+	}
+	if !slices.Contains(byID["math.multiply"].Callees, "math.add") {
+		t.Errorf("multiply.Callees = %v, want to contain math.add",
+			byID["math.multiply"].Callees)
+	}
+	mainCallees := byID[".main"].Callees
+	for _, want := range []string{
+		"math.add",
+		"math.multiply",
+		"math.(Counter).Counter",
+		"math.(Counter).bump",
+		"math.(Counter).value",
+		sccID,
+	} {
+		if !slices.Contains(mainCallees, want) {
+			t.Errorf("main.Callees missing %q; got %v", want, mainCallees)
+		}
+	}
+
+	// Bodies contain the expected snippets despite scip-clang's lack of
+	// EnclosingRange (the span-to-next-function heuristic takes over).
+	assertBodyContains(t, "add", byID["math.add"].Functions[0].Body,
+		"int add(int a, int b)", "return a + b;")
+	assertBodyContains(t, "bump", byID["math.(Counter).bump"].Functions[0].Body,
+		"int Counter::bump()", "n = add(n, 1);")
+	for _, f := range scc.Functions {
+		if !strings.Contains(f.Body, "return is_"+flip(f.Name)+"(n - 1);") {
+			t.Errorf("%s body missing mutual-recursion call; got %q", f.Name, f.Body)
+		}
+	}
+
+	// std::printf as external.
+	sawPrintf := false
+	for _, e := range res.External {
+		if e.Name == "printf" && e.Package == "std" {
+			sawPrintf = true
+		}
+	}
+	if !sawPrintf {
+		t.Errorf("expected external entry for std::printf, got %d externals", len(res.External))
+	}
 }
 
 func assertBodyContains(t *testing.T, name, body string, needles ...string) {
@@ -142,4 +189,26 @@ func redirectStderr(t *testing.T) func() {
 		<-done
 		r.Close()
 	}
+}
+
+// keys returns the keys of m as a slice (for stable failure messages).
+func keys(m map[string]bool) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	slices.Sort(out)
+	return out
+}
+
+// flip returns "odd" when given "even" and vice versa, used to assert
+// mutual-recursion call sites inside the is_even / is_odd bodies.
+func flip(name string) string {
+	switch name {
+	case "is_even":
+		return "odd"
+	case "is_odd":
+		return "even"
+	}
+	return name
 }

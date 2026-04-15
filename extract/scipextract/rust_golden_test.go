@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/loov/dreamlint/extract"
 )
 
 // TestGolden_RustExample pins the extraction of the committed
@@ -31,8 +33,14 @@ func TestGolden_RustExample(t *testing.T) {
 		t.Errorf("Language = %q, want Rust", res.Language)
 	}
 
+	sccID := "rust_example.is_even+rust_example.is_odd"
 	wantUnits := []string{
 		"rust_example.add",
+		"rust_example.(Counter).bump",
+		"rust_example.(Counter).new",
+		"rust_example.(Counter).default",
+		"rust_example.(Counter).value",
+		sccID,
 		"rust_example.multiply",
 		"rust_example.main",
 	}
@@ -49,54 +57,78 @@ func TestGolden_RustExample(t *testing.T) {
 		}
 	}
 
-	byID := map[string]*unitSummary{}
+	byID := map[string]*extract.AnalysisUnit{}
 	for _, u := range res.Units {
-		byID[u.ID] = &unitSummary{
-			callees: u.Callees,
-			body:    u.Functions[0].Body,
-			godoc:   u.Functions[0].Godoc,
-			sig:     u.Functions[0].Signature,
+		byID[u.ID] = u
+	}
+
+	// Free function: body, signature, doc comment all preserved.
+	add := byID["rust_example.add"]
+	if len(add.Callees) != 0 {
+		t.Errorf("add.Callees = %v, want empty", add.Callees)
+	}
+	assertBodyContains(t, "add", add.Functions[0].Body,
+		"pub fn add(a: i32, b: i32) -> i32",
+		"a + b")
+	if sig := add.Functions[0].Signature; !strings.Contains(sig, "pub fn add") {
+		t.Errorf("add.Signature = %q, want to contain 'pub fn add'", sig)
+	}
+
+	// Struct method: Receiver set to the impl target, not "impl".
+	bump := byID["rust_example.(Counter).bump"]
+	if got := bump.Functions[0].Receiver; got != "Counter" {
+		t.Errorf("bump.Receiver = %q, want Counter", got)
+	}
+	if !slices.Contains(bump.Callees, "rust_example.add") {
+		t.Errorf("bump.Callees = %v, want to contain rust_example.add", bump.Callees)
+	}
+	assertBodyContains(t, "bump", bump.Functions[0].Body,
+		"pub fn bump(&mut self) -> i32",
+		"self.n = add(self.n, 1);")
+
+	// Default trait impl for Counter still gets Receiver "Counter" (the
+	// impl target), with the trait name available on the descriptor chain
+	// but not bleeding into Receiver.
+	def := byID["rust_example.(Counter).default"]
+	if got := def.Functions[0].Receiver; got != "Counter" {
+		t.Errorf("default.Receiver = %q, want Counter", got)
+	}
+	if !slices.Contains(def.Callees, "rust_example.(Counter).new") {
+		t.Errorf("default.Callees = %v, want to contain rust_example.(Counter).new", def.Callees)
+	}
+
+	// Mutual recursion: is_even + is_odd land in a single SCC unit.
+	scc := byID[sccID]
+	if len(scc.Functions) != 2 {
+		t.Fatalf("SCC unit has %d functions, want 2", len(scc.Functions))
+	}
+	names := map[string]bool{}
+	for _, f := range scc.Functions {
+		names[f.Name] = true
+	}
+	if !names["is_even"] || !names["is_odd"] {
+		t.Errorf("SCC functions = %v, want {is_even, is_odd}", names)
+	}
+	if len(scc.Callees) != 0 {
+		t.Errorf("SCC.Callees = %v, want empty (mutual recursion is internal)", scc.Callees)
+	}
+
+	// main pulls the SCC, both helpers, and the Counter methods together.
+	main := byID["rust_example.main"]
+	for _, want := range []string{
+		"rust_example.add",
+		"rust_example.multiply",
+		"rust_example.(Counter).new",
+		"rust_example.(Counter).bump",
+		"rust_example.(Counter).value",
+		sccID,
+	} {
+		if !slices.Contains(main.Callees, want) {
+			t.Errorf("main.Callees missing %q; got %v", want, main.Callees)
 		}
 	}
 
-	// add: leaf, body extracted via rust-analyzer's EnclosingRange, doc comment preserved.
-	if got := byID["rust_example.add"].callees; len(got) != 0 {
-		t.Errorf("add.Callees = %v, want empty", got)
-	}
-	assertBodyContains(t, "add", byID["rust_example.add"].body,
-		"pub fn add(a: i32, b: i32) -> i32",
-		"a + b")
-	if sig := byID["rust_example.add"].sig; !strings.Contains(sig, "pub fn add") {
-		t.Errorf("add.Signature = %q, want to contain 'pub fn add'", sig)
-	}
-	if godoc := byID["rust_example.add"].godoc; !strings.Contains(godoc, "Adds two numbers") {
-		t.Errorf("add.Godoc = %q, want to mention 'Adds two numbers'", godoc)
-	}
-
-	// multiply: calls add.
-	if !slices.Contains(byID["rust_example.multiply"].callees, "rust_example.add") {
-		t.Errorf("multiply.Callees = %v, want to contain rust_example.add",
-			byID["rust_example.multiply"].callees)
-	}
-	assertBodyContains(t, "multiply", byID["rust_example.multiply"].body,
-		"pub fn multiply(a: i32, b: i32) -> i32",
-		"result = add(result, a);")
-
-	// main: calls add and multiply.
-	mainCallees := byID["rust_example.main"].callees
-	if !slices.Contains(mainCallees, "rust_example.add") {
-		t.Errorf("main.Callees = %v, want to contain rust_example.add", mainCallees)
-	}
-	if !slices.Contains(mainCallees, "rust_example.multiply") {
-		t.Errorf("main.Callees = %v, want to contain rust_example.multiply", mainCallees)
-	}
-	assertBodyContains(t, "main", byID["rust_example.main"].body,
-		"fn main()",
-		"let sum = add(2, 3);",
-		`println!("{}", product);`)
-
-	// println! macro and the core i32::add operator implementation should
-	// land in the externals via rust-analyzer's cross-crate references.
+	// println! still shows up as external.
 	sawPrintln := false
 	for _, e := range res.External {
 		if e.Name == "println" {

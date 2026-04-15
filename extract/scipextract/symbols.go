@@ -63,18 +63,7 @@ func buildFunctionInfo(info *scip.SymbolInformation, doc *scip.Document, absPath
 		if name == "" {
 			name = last.Name
 		}
-		// A type descriptor one level up from the method typically represents
-		// the enclosing class / trait / impl target.
-		for i := len(sym.Descriptors) - 2; i >= 0; i-- {
-			d := sym.Descriptors[i]
-			if d.Suffix == scip.Descriptor_Type {
-				receiver = d.Name
-				break
-			}
-			if d.Suffix != scip.Descriptor_TypeParameter {
-				break
-			}
-		}
+		receiver = receiverName(sym.Descriptors)
 	}
 
 	sig := ""
@@ -92,6 +81,43 @@ func buildFunctionInfo(info *scip.SymbolInformation, doc *scip.Document, absPath
 		Godoc:     strings.Join(info.Documentation, "\n\n"),
 		Position:  pos,
 	}
+}
+
+// receiverName returns the enclosing type (class / struct / impl target)
+// for a function-like descriptor chain.
+//
+// Languages encode this differently:
+//
+//   - Java / C++ / TypeScript: `Foo#bar().` → descriptors
+//     [Type "Foo", Method "bar"]. The last Type before the method is the
+//     receiver.
+//   - Rust (rust-analyzer): `impl#[Counter]bump().` → descriptors
+//     [Type "impl", TypeParameter "Counter", Method "bump"]. The outer
+//     Type "impl" is a synthetic wrapper; the impl target is the first
+//     TypeParameter after it. Traits (`impl Default for Counter`) add
+//     further TypeParameters; we still want the first one.
+//
+// Returns "" for free functions.
+func receiverName(descriptors []*scip.Descriptor) string {
+	if len(descriptors) < 2 {
+		return ""
+	}
+	// rust-analyzer's impl wrapper convention.
+	if descriptors[0].Suffix == scip.Descriptor_Type && descriptors[0].Name == "impl" &&
+		descriptors[1].Suffix == scip.Descriptor_TypeParameter {
+		return descriptors[1].Name
+	}
+	// Generic case: last Type descriptor before the method descriptor.
+	for i := len(descriptors) - 2; i >= 0; i-- {
+		d := descriptors[i]
+		if d.Suffix == scip.Descriptor_Type {
+			return d.Name
+		}
+		if d.Suffix != scip.Descriptor_TypeParameter {
+			return ""
+		}
+	}
+	return ""
 }
 
 // packageName builds a package identifier from the SCIP Symbol's Package
