@@ -1,0 +1,104 @@
+package scipextract
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/scip-code/scip/bindings/go/scip"
+)
+
+func TestExtractBody_EnclosingRange_FromDocText(t *testing.T) {
+	source := "fn foo() -> u32 {\n    1 + 2\n}\n"
+	doc := &scip.Document{
+		RelativePath: "src/lib.rs",
+		Text:         source,
+		Occurrences: []*scip.Occurrence{
+			{
+				Symbol:         "rust-analyzer cargo example 0.1.0 foo().",
+				Range:          []int32{0, 3, 0, 6},
+				EnclosingRange: []int32{0, 0, 2, 1},
+				SymbolRoles:    int32(scip.SymbolRole_Definition),
+			},
+		},
+	}
+	info := &scip.SymbolInformation{
+		Symbol:      "rust-analyzer cargo example 0.1.0 foo().",
+		Kind:        scip.SymbolInformation_Function,
+		DisplayName: "foo",
+	}
+	cache := newSourceCache("")
+	body, warn := extractBody(info, doc, "/repo/src/lib.rs", cache)
+	if warn != "" {
+		t.Errorf("unexpected warning: %s", warn)
+	}
+	want := "fn foo() -> u32 {\n    1 + 2\n}"
+	if body != want {
+		t.Errorf("body mismatch:\n got %q\nwant %q", body, want)
+	}
+}
+
+func TestExtractBody_FallsBackToDefinitionRange(t *testing.T) {
+	source := "fn foo() -> u32 {\n    1 + 2\n}\n"
+	doc := &scip.Document{
+		RelativePath: "src/lib.rs",
+		Text:         source,
+		Occurrences: []*scip.Occurrence{
+			{
+				Symbol:      "rust-analyzer cargo example 0.1.0 foo().",
+				Range:       []int32{0, 3, 0, 6},
+				SymbolRoles: int32(scip.SymbolRole_Definition),
+			},
+		},
+	}
+	info := &scip.SymbolInformation{
+		Symbol: "rust-analyzer cargo example 0.1.0 foo().",
+		Kind:   scip.SymbolInformation_Function,
+	}
+	cache := newSourceCache("")
+	body, warn := extractBody(info, doc, "/repo/src/lib.rs", cache)
+	if warn == "" {
+		t.Error("expected a warning when EnclosingRange is missing")
+	}
+	if !strings.HasPrefix(body, "fn foo()") {
+		t.Errorf("expected signature-line fallback, got %q", body)
+	}
+}
+
+func TestExtractBody_ReadsFromDisk(t *testing.T) {
+	dir := t.TempDir()
+	rel := "src/lib.rs"
+	abs := filepath.Join(dir, rel)
+	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := "fn foo() -> u32 {\n    1 + 2\n}\n"
+	if err := os.WriteFile(abs, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	doc := &scip.Document{
+		RelativePath: rel,
+		Occurrences: []*scip.Occurrence{
+			{
+				Symbol:         "rust-analyzer cargo example 0.1.0 foo().",
+				Range:          []int32{0, 3, 0, 6},
+				EnclosingRange: []int32{0, 0, 2, 1},
+				SymbolRoles:    int32(scip.SymbolRole_Definition),
+			},
+		},
+	}
+	info := &scip.SymbolInformation{
+		Symbol: "rust-analyzer cargo example 0.1.0 foo().",
+		Kind:   scip.SymbolInformation_Function,
+	}
+	cache := newSourceCache(dir)
+	body, warn := extractBody(info, doc, abs, cache)
+	if warn != "" {
+		t.Errorf("unexpected warning: %s", warn)
+	}
+	if body != "fn foo() -> u32 {\n    1 + 2\n}" {
+		t.Errorf("body mismatch: %q", body)
+	}
+}

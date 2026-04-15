@@ -1,0 +1,181 @@
+// Package scipextract builds dreamlint analysis units from a pre-generated
+// SCIP index (https://github.com/sourcegraph/scip). It consumes a .scip file
+// produced by any SCIP indexer (scip-typescript, scip-java, scip-python,
+// scip-clang, rust-analyzer --scip, ...) and shapes the data into
+// extract.Result so the downstream LLM pipeline is unchanged.
+package scipextract
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+
+	"github.com/scip-code/scip/bindings/go/scip"
+	"google.golang.org/protobuf/proto"
+
+	"github.com/loov/dreamlint/extract"
+)
+
+// Extractor consumes a .scip index and produces analysis units.
+type Extractor struct {
+	// IndexPath is the absolute or relative path to the .scip file.
+	IndexPath string
+
+	// PathFilters are optional filepath.Match globs (matched against
+	// Document.RelativePath). An empty slice means no filtering.
+	PathFilters []string
+
+	// ProjectRoot overrides the project root resolved from the index metadata.
+	// Most callers should leave this zero.
+	ProjectRoot string
+}
+
+// Extract parses the SCIP index and returns analysis units. Step 4 deliberately
+// produces one AnalysisUnit per function with empty Callees; the call graph is
+// built in a follow-up step.
+func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
+	data, err := os.ReadFile(e.IndexPath)
+	if err != nil {
+		return nil, fmt.Errorf("read scip index: %w", err)
+	}
+
+	var index scip.Index
+	if err := proto.Unmarshal(data, &index); err != nil {
+		return nil, fmt.Errorf("unmarshal scip index: %w", err)
+	}
+
+	root := e.ProjectRoot
+	if root == "" && index.Metadata != nil {
+		root = stripFileURI(index.Metadata.ProjectRoot)
+	}
+
+	docs := filterDocuments(index.Documents, e.PathFilters)
+
+	src := newSourceCache(root)
+
+	var funcs []*extract.FunctionInfo
+	seen := make(map[string]bool)
+
+	for _, doc := range docs {
+		absPath := filepath.Join(root, doc.RelativePath)
+		for _, sym := range doc.Symbols {
+			if !isFunctionSymbol(sym) {
+				continue
+			}
+			if seen[sym.Symbol] {
+				continue
+			}
+			seen[sym.Symbol] = true
+
+			fn := buildFunctionInfo(sym, doc, absPath)
+			if fn == nil {
+				continue
+			}
+			body, warn := extractBody(sym, doc, absPath, src)
+			fn.Body = body
+			if warn != "" {
+				fmt.Fprintf(os.Stderr, "scipextract: %s\n", warn)
+			}
+			funcs = append(funcs, fn)
+		}
+	}
+
+	// Step 4: no call graph yet — one unit per function with empty callees.
+	// Build an empty graph so BuildAnalysisUnits creates singleton SCCs.
+	graph := make(map[string][]string, len(funcs))
+	for _, fn := range funcs {
+		graph[functionID(fn)] = nil
+	}
+
+	units := extract.BuildAnalysisUnits(funcs, graph)
+
+	return &extract.Result{
+		Units:    units,
+		External: nil,
+		Language: pickLanguage(docs),
+	}, nil
+}
+
+// functionID matches the id format used by extract.BuildAnalysisUnits.
+func functionID(f *extract.FunctionInfo) string {
+	if f.Receiver != "" {
+		return f.Package + ".(" + f.Receiver + ")." + f.Name
+	}
+	return f.Package + "." + f.Name
+}
+
+// filterDocuments keeps documents whose RelativePath matches any of the globs.
+// Empty filters means keep all.
+func filterDocuments(docs []*scip.Document, filters []string) []*scip.Document {
+	if len(filters) == 0 {
+		return docs
+	}
+	var out []*scip.Document
+	for _, doc := range docs {
+		for _, pat := range filters {
+			ok, err := filepath.Match(pat, doc.RelativePath)
+			if err == nil && ok {
+				out = append(out, doc)
+				break
+			}
+		}
+	}
+	return out
+}
+
+// pickLanguage returns a display-friendly language name derived from the
+// most common Document.Language across the filtered documents.
+func pickLanguage(docs []*scip.Document) string {
+	counts := make(map[string]int)
+	for _, doc := range docs {
+		if doc.Language != "" {
+			counts[doc.Language]++
+		}
+	}
+	if len(counts) == 0 {
+		return ""
+	}
+	// Deterministic: pick the highest count, ties broken by name.
+	type kv struct {
+		lang  string
+		count int
+	}
+	entries := make([]kv, 0, len(counts))
+	for l, c := range counts {
+		entries = append(entries, kv{l, c})
+	}
+	sort.Slice(entries, func(i, j int) bool {
+		if entries[i].count != entries[j].count {
+			return entries[i].count > entries[j].count
+		}
+		return entries[i].lang < entries[j].lang
+	})
+	return displayLanguage(entries[0].lang)
+}
+
+// displayLanguage maps SCIP Language enum strings to human-readable names.
+func displayLanguage(scipLang string) string {
+	switch scipLang {
+	case "CPP":
+		return "C++"
+	case "CSharp":
+		return "C#"
+	case "ObjectiveC":
+		return "Objective-C"
+	case "ObjectiveCpp":
+		return "Objective-C++"
+	case "JavaScript":
+		return "JavaScript"
+	case "TypeScript":
+		return "TypeScript"
+	}
+	return scipLang
+}
+
+// stripFileURI removes a leading "file://" from a project-root URI.
+func stripFileURI(uri string) string {
+	return strings.TrimPrefix(uri, "file://")
+}
