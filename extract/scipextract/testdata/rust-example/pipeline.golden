@@ -1,0 +1,706 @@
+fixture language: Rust
+units (8):
+  [0] rust_example.add (callees=[])
+  [1] rust_example.(Counter).bump (callees=[rust_example.add])
+  [2] rust_example.(Counter).new (callees=[])
+  [3] rust_example.(Counter).default (callees=[rust_example.(Counter).new])
+  [4] rust_example.(Counter).value (callees=[])
+  [5] rust_example.is_even+rust_example.is_odd (callees=[])
+  [6] rust_example.multiply (callees=[rust_example.add])
+  [7] rust_example.main (callees=[rust_example.add rust_example.multiply rust_example.(Counter).new rust_example.(Counter).bump rust_example.(Counter).value rust_example.is_even+rust_example.is_odd])
+external symbols (4):
+  core/cmp/impls::eq
+  core/ops/arith::add
+  core/ops/arith::sub
+  std/macros::println
+
+== prompt 0 :: unit=rust_example.add :: pass=summary ==
+You are analyzing a Rust function to create a summary of its behavior.
+
+```
+/// Adds two numbers.
+pub fn add(a: i32, b: i32) -> i32 {
+    a + b
+}
+```
+
+## External Functions Used
+
+### core/ops/arith.add
+Signature: 
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 1 :: unit=rust_example.add :: pass=baseline ==
+You are reviewing Rust code for logical correctness.
+
+```
+/// Adds two numbers.
+pub fn add(a: i32, b: i32) -> i32 {
+    a + b
+}
+```
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 2 :: unit=rust_example.(Counter).bump :: pass=summary ==
+You are analyzing a Rust function to create a summary of its behavior.
+
+```
+    /// Increments the counter by one and returns the new value.
+    pub fn bump(&mut self) -> i32 {
+        self.n = add(self.n, 1);
+        self.n
+    }
+```
+
+## Called Functions
+
+### rust_example.add
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 3 :: unit=rust_example.(Counter).bump :: pass=baseline ==
+You are reviewing Rust code for logical correctness.
+
+```
+    /// Increments the counter by one and returns the new value.
+    pub fn bump(&mut self) -> i32 {
+        self.n = add(self.n, 1);
+        self.n
+    }
+```
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 4 :: unit=rust_example.(Counter).new :: pass=summary ==
+You are analyzing a Rust function to create a summary of its behavior.
+
+```
+    /// Creates a zeroed Counter.
+    pub fn new() -> Self {
+        Self { n: 0 }
+    }
+```
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 5 :: unit=rust_example.(Counter).new :: pass=baseline ==
+You are reviewing Rust code for logical correctness.
+
+```
+    /// Creates a zeroed Counter.
+    pub fn new() -> Self {
+        Self { n: 0 }
+    }
+```
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 6 :: unit=rust_example.(Counter).default :: pass=summary ==
+You are analyzing a Rust function to create a summary of its behavior.
+
+```
+    fn default() -> Self {
+        Counter::new()
+    }
+```
+
+## Called Functions
+
+### rust_example.(Counter).new
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 7 :: unit=rust_example.(Counter).default :: pass=baseline ==
+You are reviewing Rust code for logical correctness.
+
+```
+    fn default() -> Self {
+        Counter::new()
+    }
+```
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 8 :: unit=rust_example.(Counter).value :: pass=summary ==
+You are analyzing a Rust function to create a summary of its behavior.
+
+```
+    /// Returns the current counter value.
+    pub fn value(&self) -> i32 {
+        self.n
+    }
+```
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 9 :: unit=rust_example.(Counter).value :: pass=baseline ==
+You are reviewing Rust code for logical correctness.
+
+```
+    /// Returns the current counter value.
+    pub fn value(&self) -> i32 {
+        self.n
+    }
+```
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 10 :: unit=rust_example.is_even+rust_example.is_odd :: pass=summary ==
+You are analyzing a Rust function to create a summary of its behavior.
+
+
+## Functions (mutually recursive group)
+
+```
+/// Mutual recursion: is_even delegates to is_odd.
+pub fn is_even(n: i32) -> bool {
+    if n == 0 {
+        true
+    } else {
+        is_odd(n - 1)
+    }
+}
+```
+
+```
+/// Mutual recursion: is_odd delegates to is_even.
+pub fn is_odd(n: i32) -> bool {
+    if n == 0 {
+        false
+    } else {
+        is_even(n - 1)
+    }
+}
+```
+
+
+## External Functions Used
+
+### core/cmp/impls.eq
+Signature: 
+
+### core/ops/arith.sub
+Signature: 
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 11 :: unit=rust_example.is_even+rust_example.is_odd :: pass=baseline ==
+You are reviewing Rust code for logical correctness.
+
+
+## Functions (mutually recursive group)
+
+```
+/// Mutual recursion: is_even delegates to is_odd.
+pub fn is_even(n: i32) -> bool {
+    if n == 0 {
+        true
+    } else {
+        is_odd(n - 1)
+    }
+}
+```
+
+```
+/// Mutual recursion: is_odd delegates to is_even.
+pub fn is_odd(n: i32) -> bool {
+    if n == 0 {
+        false
+    } else {
+        is_even(n - 1)
+    }
+}
+```
+
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 12 :: unit=rust_example.multiply :: pass=summary ==
+You are analyzing a Rust function to create a summary of its behavior.
+
+```
+/// Multiplies two numbers by repeated addition.
+pub fn multiply(a: i32, b: i32) -> i32 {
+    let mut result = 0;
+    for _ in 0..b {
+        result = add(result, a);
+    }
+    result
+}
+```
+
+## Called Functions
+
+### rust_example.add
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 13 :: unit=rust_example.multiply :: pass=baseline ==
+You are reviewing Rust code for logical correctness.
+
+```
+/// Multiplies two numbers by repeated addition.
+pub fn multiply(a: i32, b: i32) -> i32 {
+    let mut result = 0;
+    for _ in 0..b {
+        result = add(result, a);
+    }
+    result
+}
+```
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 14 :: unit=rust_example.main :: pass=summary ==
+You are analyzing a Rust function to create a summary of its behavior.
+
+```
+fn main() {
+    let sum = add(2, 3);
+    let product = multiply(sum, 4);
+
+    let mut counter = Counter::new();
+    counter.bump();
+    counter.bump();
+
+    println!("{} {} even={}", product, counter.value(), is_even(product));
+}
+```
+
+## Called Functions
+
+### rust_example.add
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+### rust_example.multiply
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+### rust_example.(Counter).new
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+### rust_example.(Counter).bump
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+### rust_example.(Counter).value
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+### rust_example.is_even+rust_example.is_odd
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+## External Functions Used
+
+### std/macros.println
+Signature: 
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 15 :: unit=rust_example.main :: pass=baseline ==
+You are reviewing Rust code for logical correctness.
+
+```
+fn main() {
+    let sum = add(2, 3);
+    let product = multiply(sum, 4);
+
+    let mut counter = Counter::new();
+    counter.bump();
+    counter.bump();
+
+    println!("{} {} even={}", product, counter.value(), is_even(product));
+}
+```
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+

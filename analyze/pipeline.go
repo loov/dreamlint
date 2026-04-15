@@ -280,7 +280,7 @@ func (p *Pipeline) BuildPromptContext(unit *extract.AnalysisUnit, calleeSummarie
 	}
 
 	// Add external function info
-	for _, calleeID := range unit.Callees {
+	for _, calleeID := range unit.External {
 		if ext, ok := p.externalFuncs[calleeID]; ok {
 			ctx.ExternalFuncs = append(ctx.ExternalFuncs, ExternalFuncContext{
 				Package:   ext.Package,

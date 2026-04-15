@@ -1,0 +1,596 @@
+fixture language: TypeScript
+units (7):
+  [0] typescript-example/src/math.ts.add (callees=[])
+  [1] typescript-example/src/math.ts.multiply (callees=[typescript-example/src/math.ts.add])
+  [2] typescript-example/src/math.ts.(Counter).<constructor> (callees=[])
+  [3] typescript-example/src/math.ts.(Counter).bump (callees=[typescript-example/src/math.ts.add])
+  [4] typescript-example/src/math.ts.(Counter).value (callees=[])
+  [5] typescript-example/src/math.ts.isEven+typescript-example/src/math.ts.isOdd (callees=[])
+  [6] typescript-example/src/main.ts.main (callees=[typescript-example/src/math.ts.add typescript-example/src/math.ts.multiply typescript-example/src/math.ts.(Counter).<constructor> typescript-example/src/math.ts.(Counter).bump typescript-example/src/math.ts.(Counter).value typescript-example/src/math.ts.isEven+typescript-example/src/math.ts.isOdd])
+external symbols (1):
+  typescript/lib/lib.dom.d.ts::log
+
+== prompt 0 :: unit=typescript-example/src/math.ts.add :: pass=summary ==
+You are analyzing a TypeScript function to create a summary of its behavior.
+
+```
+export function add(a: number, b: number): number {
+    return a + b;
+}
+```
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 1 :: unit=typescript-example/src/math.ts.add :: pass=baseline ==
+You are reviewing TypeScript code for logical correctness.
+
+```
+export function add(a: number, b: number): number {
+    return a + b;
+}
+```
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 2 :: unit=typescript-example/src/math.ts.multiply :: pass=summary ==
+You are analyzing a TypeScript function to create a summary of its behavior.
+
+```
+export function multiply(a: number, b: number): number {
+    let result = 0;
+    for (let i = 0; i < b; i++) {
+        result = add(result, a);
+    }
+    return result;
+}
+```
+
+## Called Functions
+
+### typescript-example/src/math.ts.add
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 3 :: unit=typescript-example/src/math.ts.multiply :: pass=baseline ==
+You are reviewing TypeScript code for logical correctness.
+
+```
+export function multiply(a: number, b: number): number {
+    let result = 0;
+    for (let i = 0; i < b; i++) {
+        result = add(result, a);
+    }
+    return result;
+}
+```
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 4 :: unit=typescript-example/src/math.ts.(Counter).<constructor> :: pass=summary ==
+You are analyzing a TypeScript function to create a summary of its behavior.
+
+```
+    constructor() {
+        this.n = 0;
+    }
+```
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 5 :: unit=typescript-example/src/math.ts.(Counter).<constructor> :: pass=baseline ==
+You are reviewing TypeScript code for logical correctness.
+
+```
+    constructor() {
+        this.n = 0;
+    }
+```
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 6 :: unit=typescript-example/src/math.ts.(Counter).bump :: pass=summary ==
+You are analyzing a TypeScript function to create a summary of its behavior.
+
+```
+    bump(): number {
+        this.n = add(this.n, 1);
+        return this.n;
+    }
+```
+
+## Called Functions
+
+### typescript-example/src/math.ts.add
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 7 :: unit=typescript-example/src/math.ts.(Counter).bump :: pass=baseline ==
+You are reviewing TypeScript code for logical correctness.
+
+```
+    bump(): number {
+        this.n = add(this.n, 1);
+        return this.n;
+    }
+```
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 8 :: unit=typescript-example/src/math.ts.(Counter).value :: pass=summary ==
+You are analyzing a TypeScript function to create a summary of its behavior.
+
+```
+    value(): number {
+        return this.n;
+    }
+```
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 9 :: unit=typescript-example/src/math.ts.(Counter).value :: pass=baseline ==
+You are reviewing TypeScript code for logical correctness.
+
+```
+    value(): number {
+        return this.n;
+    }
+```
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 10 :: unit=typescript-example/src/math.ts.isEven+typescript-example/src/math.ts.isOdd :: pass=summary ==
+You are analyzing a TypeScript function to create a summary of its behavior.
+
+
+## Functions (mutually recursive group)
+
+```
+export function isEven(n: number): boolean {
+    if (n === 0) {
+        return true;
+    }
+    return isOdd(n - 1);
+}
+```
+
+```
+export function isOdd(n: number): boolean {
+    if (n === 0) {
+        return false;
+    }
+    return isEven(n - 1);
+}
+```
+
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 11 :: unit=typescript-example/src/math.ts.isEven+typescript-example/src/math.ts.isOdd :: pass=baseline ==
+You are reviewing TypeScript code for logical correctness.
+
+
+## Functions (mutually recursive group)
+
+```
+export function isEven(n: number): boolean {
+    if (n === 0) {
+        return true;
+    }
+    return isOdd(n - 1);
+}
+```
+
+```
+export function isOdd(n: number): boolean {
+    if (n === 0) {
+        return false;
+    }
+    return isEven(n - 1);
+}
+```
+
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 12 :: unit=typescript-example/src/main.ts.main :: pass=summary ==
+You are analyzing a TypeScript function to create a summary of its behavior.
+
+```
+function main(): void {
+    const sum = add(2, 3);
+    const product = multiply(sum, 4);
+
+    const counter = new Counter();
+    counter.bump();
+    counter.bump();
+
+    console.log(product, counter.value(), isEven(product));
+}
+```
+
+## Called Functions
+
+### typescript-example/src/math.ts.add
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+### typescript-example/src/math.ts.multiply
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+### typescript-example/src/math.ts.(Counter).<constructor>
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+### typescript-example/src/math.ts.(Counter).bump
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+### typescript-example/src/math.ts.(Counter).value
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+### typescript-example/src/math.ts.isEven+typescript-example/src/math.ts.isOdd
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+## External Functions Used
+
+### typescript/lib/lib.dom.d.ts.log
+Signature: 
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 13 :: unit=typescript-example/src/main.ts.main :: pass=baseline ==
+You are reviewing TypeScript code for logical correctness.
+
+```
+function main(): void {
+    const sum = add(2, 3);
+    const product = multiply(sum, 4);
+
+    const counter = new Counter();
+    counter.bump();
+    counter.bump();
+
+    console.log(product, counter.value(), isEven(product));
+}
+```
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+

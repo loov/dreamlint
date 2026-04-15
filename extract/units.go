@@ -5,11 +5,18 @@ import (
 	"strings"
 )
 
-// AnalysisUnit is the atomic unit of analysis
+// AnalysisUnit is the atomic unit of analysis.
+//
+// Callees holds the ids of other internal units this unit depends on
+// (callee units, already collapsed by SCC). External is the set of
+// callgraph edges whose targets live outside the analyzed code; the
+// downstream pipeline uses them to pull in signature / doc context
+// for dependencies.
 type AnalysisUnit struct {
 	ID        string
 	Functions []*FunctionInfo
 	Callees   []string
+	External  []string
 }
 
 // BuildAnalysisUnits creates analysis units from functions and callgraph
@@ -100,9 +107,12 @@ func BuildAnalysisUnits(funcs []*FunctionInfo, graph map[string][]string) []*Ana
 		units = append(units, unit)
 	}
 
-	// Second pass: Populate Callees using the unit ID map
+	// Second pass: Populate Callees using the unit ID map, plus
+	// External for edges that target symbols outside the analyzed
+	// function set (e.g. stdlib, third-party packages).
 	for i, scc := range sccs {
 		seenCallees := make(map[string]bool)
+		seenExternal := make(map[string]bool)
 		for _, id := range scc {
 			for _, callee := range internalGraph[id] {
 				calleeUnitIdx := sccMap[callee]
@@ -112,6 +122,15 @@ func BuildAnalysisUnits(funcs []*FunctionInfo, graph map[string][]string) []*Ana
 						units[i].Callees = append(units[i].Callees, calleeUnitID)
 						seenCallees[calleeUnitID] = true
 					}
+				}
+			}
+			for _, callee := range graph[id] {
+				if _, internal := funcMap[callee]; internal {
+					continue
+				}
+				if !seenExternal[callee] {
+					units[i].External = append(units[i].External, callee)
+					seenExternal[callee] = true
 				}
 			}
 		}
