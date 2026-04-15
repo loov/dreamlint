@@ -99,31 +99,16 @@ func run(configPaths, inlineConfigs []string, format string, resume bool, prompt
 		c = cache.New(cfg.Cache.Dir)
 	}
 
-	// Load packages once
-	fmt.Println("Loading packages...")
-	pkgs, err := extract.LoadPackages(".", patterns...)
+	// Extract analysis units
+	fmt.Println("Extracting analysis units...")
+	ex := &extract.GoExtractor{Dir: ".", Patterns: patterns}
+	res, err := ex.Extract(context.Background())
 	if err != nil {
-		return fmt.Errorf("load packages: %w", err)
+		return fmt.Errorf("extract: %w", err)
 	}
-
-	// Extract functions
-	fmt.Println("Extracting functions...")
-	funcs := extract.ExtractFunctions(pkgs)
-	fmt.Printf("Found %d functions\n", len(funcs))
-
-	// Build callgraph
-	fmt.Println("Building callgraph...")
-	graph := extract.BuildCallgraph(pkgs)
-
-	// Extract external function info
-	fmt.Println("Extracting external functions...")
-	externalFuncs := extract.ExtractExternalFuncs(pkgs, graph)
-	fmt.Printf("Found %d external functions\n", len(externalFuncs))
-
-	// Build analysis units
-	fmt.Println("Building analysis units...")
-	units := extract.BuildAnalysisUnits(funcs, graph)
-	fmt.Printf("Created %d analysis units\n", len(units))
+	units := res.Units
+	externalFuncs := res.External
+	fmt.Printf("Created %d analysis units (%d external functions)\n", len(units), len(externalFuncs))
 
 	// Create pipeline
 	pipeline := analyze.NewPipeline(cfg, c, client, externalFuncs)
