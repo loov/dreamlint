@@ -1,6 +1,6 @@
 # dreamlint
 
-dreamlint is a staged Go code review tool that analyzes functions in dependency order using LLMs. It works around context limits by building a callgraph, grouping mutually recursive functions, and analyzing them bottom-up so that callee summaries inform caller analysis.
+dreamlint is a staged code review tool that analyzes functions in dependency order using LLMs. It works around context limits by building a callgraph, grouping mutually recursive functions, and analyzing them bottom-up so that callee summaries inform caller analysis. Go is supported natively via `go/packages`; other languages (C, C++, Rust, TypeScript, ...) are supported by consuming a pre-generated [SCIP](https://github.com/sourcegraph/scip) index.
 
 The name reflects the nature of LLM-based code review: the issues it finds might be real, might be hallucinated, or might be somewhere in between. Consider it a fever dream review.
 
@@ -67,7 +67,49 @@ Flags:
 | `-format` | `all` | Output format: `json`, `markdown`, `sarif`, or `all`. |
 | `-resume` | `false` | Resume from a partial report left by an interrupted run. |
 | `-prompts` | — | Directory of prompt files, overriding the builtin prompts. |
-| `patterns` | `./...` | Packages to analyze (positional arguments). |
+| `-scip` | — | Path to a `.scip` index. When set, dreamlint consumes the index instead of loading Go packages. |
+| `patterns` | `./...` (Go) | Without `-scip`: Go package patterns. With `-scip`: `filepath.Match` globs against `Document.RelativePath`. |
+
+## Non-Go languages (SCIP)
+
+dreamlint can review any language with a SCIP indexer. Generate the index yourself, then pass it with `-scip`:
+
+```sh
+# TypeScript
+scip-typescript index
+dreamlint run -config dreamlint.cue -scip index.scip "src/**"
+
+# Rust
+rust-analyzer scip .
+dreamlint run -config dreamlint.cue -scip index.scip
+
+# C / C++ (requires compile_commands.json)
+scip-clang --compdb-path=compile_commands.json
+dreamlint run -config dreamlint.cue -scip index.scip
+
+# Python
+scip-python index .
+dreamlint run -config dreamlint.cue -scip index.scip
+
+# Java / Kotlin
+scip-java index
+dreamlint run -config dreamlint.cue -scip index.scip
+```
+
+Positional arguments become [`filepath.Match`](https://pkg.go.dev/path/filepath#Match) globs against the index's relative paths, letting you scope analysis to a subset of files.
+
+**Known-good indexers** (reliable `EnclosingRange`, full function bodies in prompts):
+
+- `scip-typescript`
+- `scip-java`
+- `scip-python`
+
+**Experimental** (may omit `EnclosingRange`, degrading some prompts to signature-only context; dreamlint will log a warning per affected function):
+
+- `scip-clang`
+- `rust-analyzer --scip`
+
+Go-specific idioms that live in `builtin:correctness` (e.g. `fmt.Errorf %w`, `defer rows.Close()`, `sql.ErrNoRows`) may produce minor noise on non-Go languages. The `{{.Language}}` variable is threaded through every builtin prompt so the LLM sees the correct language label.
 
 ## Configuration
 

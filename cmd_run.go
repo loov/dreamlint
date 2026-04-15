@@ -14,7 +14,9 @@ import (
 	"github.com/loov/dreamlint/analyze"
 	"github.com/loov/dreamlint/cache"
 	"github.com/loov/dreamlint/config"
+	"github.com/loov/dreamlint/extract"
 	"github.com/loov/dreamlint/extract/goextract"
+	"github.com/loov/dreamlint/extract/scipextract"
 	"github.com/loov/dreamlint/llm"
 	"github.com/loov/dreamlint/report"
 	"github.com/loov/dreamlint/report/markdown"
@@ -27,6 +29,7 @@ type cmdRun struct {
 	format        string
 	resume        bool
 	promptsDir    string
+	scipPath      string
 	patterns      []string
 }
 
@@ -50,7 +53,9 @@ func (c *cmdRun) Setup(params clingy.Parameters) {
 
 	c.promptsDir = params.Flag("prompts", "directory to load prompts from", "").(string)
 
-	c.patterns = params.Arg("patterns", "packages to analyze",
+	c.scipPath = params.Flag("scip", "path to a .scip index file for multi-language analysis", "").(string)
+
+	c.patterns = params.Arg("patterns", "packages (Go) or path globs (SCIP) to analyze",
 		clingy.Optional,
 		clingy.Repeated,
 	).([]string)
@@ -58,11 +63,11 @@ func (c *cmdRun) Setup(params clingy.Parameters) {
 
 func (c *cmdRun) Execute(ctx context.Context) error {
 	patterns := c.patterns
-	if len(patterns) == 0 {
+	if len(patterns) == 0 && c.scipPath == "" {
 		patterns = []string{"./..."}
 	}
 
-	return run(c.configPaths, c.inlineConfigs, c.format, c.resume, c.promptsDir, patterns)
+	return run(c.configPaths, c.inlineConfigs, c.format, c.resume, c.promptsDir, c.scipPath, patterns)
 }
 
 // isTTY reports whether stdout is a terminal.
@@ -83,7 +88,7 @@ func printProgress(format string, args ...any) {
 	}
 }
 
-func run(configPaths, inlineConfigs []string, format string, resume bool, promptsDir string, patterns []string) error {
+func run(configPaths, inlineConfigs []string, format string, resume bool, promptsDir string, scipPath string, patterns []string) error {
 	// Load config
 	cfg, err := config.LoadConfig(configPaths, inlineConfigs, nil)
 	if err != nil {
@@ -101,7 +106,12 @@ func run(configPaths, inlineConfigs []string, format string, resume bool, prompt
 
 	// Extract analysis units
 	fmt.Println("Extracting analysis units...")
-	ex := &goextract.Extractor{Dir: ".", Patterns: patterns}
+	var ex extract.Extractor
+	if scipPath != "" {
+		ex = &scipextract.Extractor{IndexPath: scipPath, PathFilters: patterns}
+	} else {
+		ex = &goextract.Extractor{Dir: ".", Patterns: patterns}
+	}
 	res, err := ex.Extract(context.Background())
 	if err != nil {
 		return fmt.Errorf("extract: %w", err)
