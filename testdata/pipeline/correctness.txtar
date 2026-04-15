@@ -5,7 +5,7 @@ package: ./testdata/testpkg
 == prompt 0 ==
 You are analyzing a Go function to create a summary of its behavior.
 
-```go
+```
 // Add adds two numbers.
 //
 // TODO: should this handle overflow?
@@ -33,7 +33,7 @@ Field guidance:
 == prompt 1 ==
 You are reviewing Go code for correctness issues.
 
-```go
+```
 // Add adds two numbers.
 //
 // TODO: should this handle overflow?

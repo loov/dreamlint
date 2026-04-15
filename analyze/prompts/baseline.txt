@@ -1,4 +1,4 @@
-You are reviewing Go code for logical correctness.
+You are reviewing {{.Language}} code for logical correctness.
 {{template "function-context" .}}
 {{- template "summary-context" .}}
 

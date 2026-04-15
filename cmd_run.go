@@ -112,6 +112,7 @@ func run(configPaths, inlineConfigs []string, format string, resume bool, prompt
 
 	// Create pipeline
 	pipeline := analyze.NewPipeline(cfg, c, client, externalFuncs)
+	pipeline.SetLanguage(res.Language)
 	if promptsDir != "" {
 		pipeline.SetPromptsFS(os.DirFS(promptsDir))
 	}

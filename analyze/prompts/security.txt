@@ -1,4 +1,4 @@
-You are performing a security audit of a Go function.
+You are performing a security audit of a {{.Language}} function.
 {{template "function-context" .}}
 {{- template "summary-context" .}}
 {{- template "callees-context" .}}

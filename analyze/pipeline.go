@@ -41,6 +41,13 @@ type Pipeline struct {
 	externalFuncs map[string]*extract.ExternalFunc
 	promptsFS     fs.FS
 	onProgress    ProgressCallback
+	language      string
+}
+
+// SetLanguage sets the source language used when rendering prompts.
+// When unset, prompts default to "Go".
+func (p *Pipeline) SetLanguage(lang string) {
+	p.language = lang
 }
 
 // NewPipeline creates a new analysis pipeline
@@ -232,7 +239,11 @@ func (p *Pipeline) Analyze(ctx context.Context, unit *extract.AnalysisUnit, call
 }
 
 func (p *Pipeline) BuildPromptContext(unit *extract.AnalysisUnit, calleeSummaries map[string]*SummaryResponse) PromptContext {
-	ctx := PromptContext{}
+	lang := p.language
+	if lang == "" {
+		lang = "Go"
+	}
+	ctx := PromptContext{Language: lang}
 
 	if len(unit.Functions) == 1 {
 		fn := unit.Functions[0]

@@ -3,12 +3,12 @@
 
 ## Functions (mutually recursive group)
 {{range .Functions}}
-```go
+```
 {{.Body}}
 ```
 {{end -}}
 {{- else}}
-```go
+```
 {{.Body}}
 ```
 {{- end}}

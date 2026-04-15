@@ -1,4 +1,4 @@
-You are reviewing Go code for maintainability issues.
+You are reviewing {{.Language}} code for maintainability issues.
 {{template "function-context" .}}
 {{- template "summary-context" .}}
 

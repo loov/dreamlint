@@ -13,6 +13,9 @@ import (
 
 // PromptContext holds data available to prompt templates
 type PromptContext struct {
+	// Source language (e.g. "Go", "Rust", "C++")
+	Language string
+
 	// Function info
 	Name      string
 	Package   string
