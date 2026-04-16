@@ -124,3 +124,39 @@ func TestBuildCallgraph_ExternalRef(t *testing.T) {
 		t.Errorf("ExternalFunc.Doc = %q", ext.Doc)
 	}
 }
+
+// TestBuildExternalFunc_FilterAlignment pins the shared callable filter:
+// buildExternalFunc uses isFunctionSymbol (Kind OR callable descriptor)
+// when external info is present, otherwise descriptor suffix alone.
+func TestBuildExternalFunc_FilterAlignment(t *testing.T) {
+	// Callable descriptor, callable Kind — accepted.
+	funSym := "rust-analyzer cargo std 1.0.0 io/println()."
+	// Non-callable descriptor, no external info — rejected.
+	termSym := "rust-analyzer cargo std 1.0.0 io/STDOUT."
+	// Callable descriptor, no external info — accepted via descriptor.
+	descOnlySym := "rust-analyzer cargo std 1.0.0 io/flush()."
+	// Non-callable descriptor + callable Kind in external info —
+	// accepted after alignment (Kind wins via isFunctionSymbol's union
+	// semantics; previously rejected by descriptor-only filter).
+	ctorSym := "rust-analyzer cargo std 1.0.0 Vec#"
+
+	index := &scip.Index{
+		ExternalSymbols: []*scip.SymbolInformation{
+			{Symbol: funSym, Kind: scip.SymbolInformation_Function, DisplayName: "println"},
+			{Symbol: ctorSym, Kind: scip.SymbolInformation_Constructor, DisplayName: "Vec"},
+		},
+	}
+
+	if got := buildExternalFunc(funSym, index); got == nil {
+		t.Errorf("callable Kind + callable descriptor: got nil, want ExternalFunc")
+	}
+	if got := buildExternalFunc(termSym, index); got != nil {
+		t.Errorf("non-callable descriptor, no info: got %+v, want nil", got)
+	}
+	if got := buildExternalFunc(descOnlySym, index); got == nil {
+		t.Errorf("callable descriptor, no info: got nil, want ExternalFunc")
+	}
+	if got := buildExternalFunc(ctorSym, index); got == nil {
+		t.Errorf("Kind=Constructor in external info: got nil, want ExternalFunc")
+	}
+}

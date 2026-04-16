@@ -173,29 +173,32 @@ func externalID(symbol string) string {
 // buildExternalFunc returns a shallow ExternalFunc for a reference to
 // symbol. Metadata is pulled from index.ExternalSymbols when available;
 // otherwise we synthesize it from the parsed descriptors.
+//
+// Filtering mirrors isFunctionSymbol: when the index carries
+// SymbolInformation for this external, the full Kind+descriptor check
+// is applied; otherwise we fall back to the descriptor suffix alone.
 func buildExternalFunc(symbol string, index *scip.Index) *extract.ExternalFunc {
 	sym, err := scip.ParseSymbol(symbol)
-	if err != nil {
-		return nil
-	}
-	// Filter to function-like symbols.
-	if len(sym.Descriptors) == 0 {
-		return nil
-	}
-	last := sym.Descriptors[len(sym.Descriptors)-1]
-	switch last.Suffix {
-	case scip.Descriptor_Method, scip.Descriptor_Macro:
-		// callable
-	default:
+	if err != nil || len(sym.Descriptors) == 0 {
 		return nil
 	}
 
+	info := findExternalSymbolInfo(symbol, index)
+	if info != nil {
+		if !isFunctionSymbol(info) {
+			return nil
+		}
+	} else if !isCallableDescriptor(sym.Descriptors[len(sym.Descriptors)-1]) {
+		return nil
+	}
+
+	last := sym.Descriptors[len(sym.Descriptors)-1]
 	ext := &extract.ExternalFunc{
 		Package: packageName(sym),
 		Name:    last.Name,
 	}
 
-	if info := findExternalSymbolInfo(symbol, index); info != nil {
+	if info != nil {
 		if info.DisplayName != "" {
 			ext.Name = info.DisplayName
 		}

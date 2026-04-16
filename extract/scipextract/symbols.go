@@ -40,7 +40,18 @@ func isFunctionSymbol(info *scip.SymbolInformation) bool {
 	if err != nil || len(sym.Descriptors) == 0 {
 		return false
 	}
-	switch sym.Descriptors[len(sym.Descriptors)-1].Suffix {
+	return isCallableDescriptor(sym.Descriptors[len(sym.Descriptors)-1])
+}
+
+// isCallableDescriptor reports whether a SCIP descriptor identifies a
+// callable entity (function, method, or macro). Shared between internal
+// symbol filtering (isFunctionSymbol) and external-symbol filtering
+// (buildExternalFunc) so both agree on the descriptor-only fallback.
+func isCallableDescriptor(d *scip.Descriptor) bool {
+	if d == nil {
+		return false
+	}
+	switch d.Suffix {
 	case scip.Descriptor_Method, scip.Descriptor_Macro:
 		return true
 	}
