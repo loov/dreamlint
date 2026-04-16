@@ -118,16 +118,34 @@ func run(configPaths, inlineConfigs []string, format string, resume bool, prompt
 	}
 	units := res.Units
 	externalFuncs := res.External
-	fmt.Printf("Created %d analysis units (%d external functions)\n", len(units), len(externalFuncs))
+	types := res.Types
+	fmt.Printf("Created %d analysis units (%d external functions, %d types)\n", len(units), len(externalFuncs), len(types))
+
+	// Function lookup for receiver-type sibling-method rendering.
+	funcs := make(map[string]*extract.FunctionInfo)
+	for _, unit := range units {
+		for _, fn := range unit.Functions {
+			funcs[fn.ID()] = fn
+		}
+	}
 
 	// Create pipeline
-	pipeline := analyze.NewPipeline(cfg, c, client, externalFuncs)
+	pipeline := analyze.NewPipeline(cfg, c, client, externalFuncs, types, funcs)
 	pipeline.SetLanguage(res.Language)
 	if promptsDir != "" {
 		pipeline.SetPromptsFS(os.DirFS(promptsDir))
 	}
 	if err := pipeline.LoadPrompts(); err != nil {
 		return fmt.Errorf("load prompts: %w", err)
+	}
+
+	// Pre-compute per-type summaries so method prompts get a richer
+	// receiver-type block. Safe to call with zero types — no-op.
+	if len(types) > 0 {
+		fmt.Printf("Summarizing %d types...\n", len(types))
+		if err := pipeline.AnalyzeTypes(context.Background()); err != nil {
+			return fmt.Errorf("analyze types: %w", err)
+		}
 	}
 
 	// Load or create report

@@ -27,6 +27,10 @@ type PromptContext struct {
 	// For SCCs with multiple functions
 	Functions []FunctionContext
 
+	// Receiver type context (declaration body + sibling methods + LLM
+	// summary). Populated for methods whose enclosing type was extracted.
+	ReceiverType *ReceiverTypeContext
+
 	// Callee summaries
 	Callees []CalleeSummary
 
@@ -35,6 +39,42 @@ type PromptContext struct {
 
 	// For non-summary passes
 	Summary *SummaryContext
+}
+
+// ReceiverTypeContext holds the enclosing type's info for rendering in
+// a method's prompt. Purpose/Behavior/Invariants/Security come from the
+// type summary pass and are empty when that pass has not run.
+type ReceiverTypeContext struct {
+	Name       string
+	Kind       string
+	Signature  string
+	Body       string
+	Godoc      string
+	Methods    []ReceiverMethodContext
+	Purpose    string
+	Behavior   string
+	Invariants []string
+	Security   []string
+}
+
+// ReceiverMethodContext describes a sibling method on the same
+// receiver type.
+type ReceiverMethodContext struct {
+	Name      string
+	Signature string
+	Godoc     string
+}
+
+// TypePromptContext is the data shape for the type_summary prompt.
+type TypePromptContext struct {
+	Language  string
+	Kind      string
+	Name      string
+	Package   string
+	Signature string
+	Body      string
+	Godoc     string
+	Methods   []ReceiverMethodContext
 }
 
 // FunctionContext holds info about a single function in an SCC
@@ -186,12 +226,20 @@ func LoadInlinePrompt(name string, content string) (*template.Template, error) {
 
 // ExecutePrompt executes a prompt template with the given context
 func ExecutePrompt(tmpl *template.Template, ctx PromptContext) (string, error) {
+	return executeTemplate(tmpl, ctx)
+}
+
+// ExecuteTypePrompt executes the type_summary prompt template.
+func ExecuteTypePrompt(tmpl *template.Template, ctx TypePromptContext) (string, error) {
+	return executeTemplate(tmpl, ctx)
+}
+
+func executeTemplate(tmpl *template.Template, data any) (string, error) {
 	if tmpl == nil {
 		return "", errors.New("template is nil")
 	}
-
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, ctx); err != nil {
+	if err := tmpl.Execute(&buf, data); err != nil {
 		return "", fmt.Errorf("failed to execute template: %w", err)
 	}
 	return buf.String(), nil

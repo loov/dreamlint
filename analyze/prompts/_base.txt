@@ -14,6 +14,46 @@
 {{- end}}
 {{- end}}
 
+{{- define "receiver-type-context" -}}
+{{- if .ReceiverType}}
+
+## Receiver Type: {{.ReceiverType.Kind}} {{.ReceiverType.Name}}
+{{- if .ReceiverType.Godoc}}
+{{.ReceiverType.Godoc}}
+{{- end}}
+
+```
+{{.ReceiverType.Body}}
+```
+{{- if .ReceiverType.Purpose}}
+
+Purpose: {{.ReceiverType.Purpose}}
+{{- end}}
+{{- if .ReceiverType.Behavior}}
+Behavior: {{.ReceiverType.Behavior}}
+{{- end}}
+{{- if .ReceiverType.Invariants}}
+Type invariants:
+{{- range .ReceiverType.Invariants}}
+- {{.}}
+{{- end}}
+{{- end}}
+{{- if .ReceiverType.Security}}
+Type security notes:
+{{- range .ReceiverType.Security}}
+- {{.}}
+{{- end}}
+{{- end}}
+{{- if .ReceiverType.Methods}}
+
+Other methods on {{.ReceiverType.Name}}:
+{{- range .ReceiverType.Methods}}
+- {{if .Signature}}`{{.Signature}}`{{end}}{{if and .Signature .Godoc}} — {{end}}{{.Godoc}}
+{{- end}}
+{{- end}}
+{{- end}}
+{{- end}}
+
 {{- define "summary-context" -}}
 {{- if .Summary}}
 

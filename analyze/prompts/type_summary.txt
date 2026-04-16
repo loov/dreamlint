@@ -1,0 +1,30 @@
+You are analyzing a {{.Language}} {{.Kind}} named {{.Name}} to summarize what it represents.
+
+```
+{{.Body}}
+```
+{{- if .Godoc}}
+
+Documentation: {{.Godoc}}
+{{- end}}
+{{- if .Methods}}
+
+Methods:
+{{- range .Methods}}
+- {{if .Signature}}`{{.Signature}}`{{end}}{{if and .Signature .Godoc}} — {{end}}{{.Godoc}}
+{{- end}}
+{{- end}}
+
+Analyze this {{.Kind}} and respond with JSON in this exact format:
+{
+  "purpose": "One sentence: what this {{.Kind}} represents, from a caller's perspective",
+  "behavior": "Lifecycle, mutability, and how instances behave across method calls",
+  "invariants": ["invariants that hold across all method calls"],
+  "security": ["security-relevant state, contracts, or data this type is responsible for"]
+}
+
+Field guidance:
+- purpose: describe the concept the type models, not the syntactic shape (e.g. "a thread-safe counter", not "a struct with an int field")
+- behavior: lifetime, mutability, thread-safety, cloneability, and any state transitions enforced by the methods
+- invariants: conditions the type guarantees to hold between method calls (e.g. "value is always non-negative"); empty array if none apply
+- security: sensitive data held, trust boundaries crossed, validation responsibilities; empty array if nothing security-relevant applies

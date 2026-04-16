@@ -79,13 +79,23 @@ func runPipelineGolden(t *testing.T, root string) {
 		},
 	}
 
-	// Pre-seed two responses per unit: a deterministic summary (so
-	// downstream prompts render "Purpose: ..." blocks for callees)
-	// and an empty issues response. Extra calls beyond this fall
-	// back to the mock's default `{"issues": []}`.
+	// Pre-seed responses:
+	//   - one type-summary response per extracted type (pinned text so
+	//     the rendered receiver-type block in downstream prompts is
+	//     deterministic).
+	//   - two responses per unit: a deterministic function summary
+	//     (so callee context blocks render "Purpose: ...") and an
+	//     empty issues response.
+	// Extra calls beyond this fall back to the mock's default
+	// `{"issues": []}`.
+	typeSummaryJSON := `{"purpose": "test type purpose", "behavior": "test type behavior", ` +
+		`"invariants": ["test type invariant"], "security": []}`
 	summaryJSON := `{"purpose": "test purpose", "behavior": "test behavior", ` +
 		`"invariants": ["test invariant"], "security": []}`
 	var responses []llm.Response
+	for range res.Types {
+		responses = append(responses, llm.Response{Content: typeSummaryJSON})
+	}
 	for range res.Units {
 		responses = append(responses,
 			llm.Response{Content: summaryJSON},
@@ -94,14 +104,26 @@ func runPipelineGolden(t *testing.T, root string) {
 	}
 	mock := llm.NewMockClient(responses...)
 
-	pipeline := analyze.NewPipeline(cfg, nil, mock, res.External)
+	// Function lookup for receiver-type sibling rendering.
+	funcByID := make(map[string]*extract.FunctionInfo)
+	for _, unit := range res.Units {
+		for _, fn := range unit.Functions {
+			funcByID[fn.ID()] = fn
+		}
+	}
+
+	pipeline := analyze.NewPipeline(cfg, nil, mock, res.External, res.Types, funcByID)
 	pipeline.SetLanguage(res.Language)
 	if err := pipeline.LoadPrompts(); err != nil {
 		t.Fatalf("load prompts: %v", err)
 	}
 
-	calleeSummaries := make(map[string]*analyze.SummaryResponse)
 	ctx := context.Background()
+	if err := pipeline.AnalyzeTypes(ctx); err != nil {
+		t.Fatalf("analyze types: %v", err)
+	}
+
+	calleeSummaries := make(map[string]*analyze.SummaryResponse)
 	for _, unit := range res.Units {
 		if _, err := pipeline.Analyze(ctx, unit, calleeSummaries); err != nil {
 			t.Fatalf("analyze %s: %v", unit.ID, err)
@@ -147,6 +169,16 @@ func renderPipelinePrompts(res *extract.Result, prompts []string) string {
 	for i, u := range res.Units {
 		fmt.Fprintf(&b, "  [%d] %s (callees=%v)\n", i, u.ID, u.Callees)
 	}
+	fmt.Fprintf(&b, "types (%d):\n", len(res.Types))
+	typeIDs := make([]string, 0, len(res.Types))
+	for id := range res.Types {
+		typeIDs = append(typeIDs, id)
+	}
+	sortStrings(typeIDs)
+	for _, id := range typeIDs {
+		t := res.Types[id]
+		fmt.Fprintf(&b, "  %s (%s, methods=%v)\n", id, t.Kind, t.Methods)
+	}
 	fmt.Fprintf(&b, "external symbols (%d):\n", len(res.External))
 	// Sort for determinism.
 	extIDs := make([]string, 0, len(res.External))
@@ -160,8 +192,25 @@ func renderPipelinePrompts(res *extract.Result, prompts []string) string {
 	}
 	b.WriteString("\n")
 
-	passNames := []string{"summary", "baseline"}
 	promptIdx := 0
+
+	// Type summary prompts come first (AnalyzeTypes iterates types in
+	// sorted ID order — match that here so the golden is stable).
+	for _, id := range typeIDs {
+		if promptIdx >= len(prompts) {
+			break
+		}
+		fmt.Fprintf(&b, "== prompt %d :: type=%s :: pass=type_summary ==\n",
+			promptIdx, id)
+		b.WriteString(prompts[promptIdx])
+		if !strings.HasSuffix(prompts[promptIdx], "\n") {
+			b.WriteString("\n")
+		}
+		b.WriteString("\n")
+		promptIdx++
+	}
+
+	passNames := []string{"summary", "baseline"}
 	for _, unit := range res.Units {
 		for _, pass := range passNames {
 			if promptIdx >= len(prompts) {

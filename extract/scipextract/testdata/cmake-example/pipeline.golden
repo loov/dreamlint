@@ -7,14 +7,195 @@ units (7):
   [4] math.multiply (callees=[math.add])
   [5] math.is_even+math.is_odd (callees=[])
   [6] .main (callees=[math.(Counter).Counter math.(Counter).bump math.(Counter).value math.multiply math.add math.is_even+math.is_odd])
+types (1):
+  math.Counter (type, methods=[math.(Counter).Counter math.(Counter).value math.(Counter).bump])
 external symbols (1):
   std::printf
 
-== prompt 0 :: unit=math.(Counter).Counter :: pass=summary ==
+== prompt 0 :: type=math.Counter :: pass=type_summary ==
+You are analyzing a C++ type named Counter to summarize what it represents.
+
+```
+class Counter {
+public:
+    Counter();
+    // bump increments the counter and returns the new value.
+    int bump();
+    // value returns the current counter.
+    int value() const;
+
+private:
+    int n;
+};
+
+// is_even reports whether n is even via mutual recursion with is_odd.
+bool is_even(int n);
+
+// is_odd reports whether n is odd via mutual recursion with is_even.
+bool is_odd(int n);
+
+} // namespace math
+```
+
+Documentation: Counter accumulates bumps into a running total.
+
+Methods:
+- No documentation available.
+- value returns the current counter.
+- bump increments the counter and returns the new value.
+
+Analyze this type and respond with JSON in this exact format:
+{
+  "purpose": "One sentence: what this type represents, from a caller's perspective",
+  "behavior": "Lifecycle, mutability, and how instances behave across method calls",
+  "invariants": ["invariants that hold across all method calls"],
+  "security": ["security-relevant state, contracts, or data this type is responsible for"]
+}
+
+Field guidance:
+- purpose: describe the concept the type models, not the syntactic shape (e.g. "a thread-safe counter", not "a struct with an int field")
+- behavior: lifetime, mutability, thread-safety, cloneability, and any state transitions enforced by the methods
+- invariants: conditions the type guarantees to hold between method calls (e.g. "value is always non-negative"); empty array if none apply
+- security: sensitive data held, trust boundaries crossed, validation responsibilities; empty array if nothing security-relevant applies
+
+== prompt 1 :: unit=math.(Counter).Counter :: pass=summary ==
 You are analyzing a C++ function to create a summary of its behavior.
 
 ```
 Counter::Counter() : n(0) {}
+```
+
+## Receiver Type: type Counter
+Counter accumulates bumps into a running total.
+
+```
+class Counter {
+public:
+    Counter();
+    // bump increments the counter and returns the new value.
+    int bump();
+    // value returns the current counter.
+    int value() const;
+
+private:
+    int n;
+};
+
+// is_even reports whether n is even via mutual recursion with is_odd.
+bool is_even(int n);
+
+// is_odd reports whether n is odd via mutual recursion with is_even.
+bool is_odd(int n);
+
+} // namespace math
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- value returns the current counter.
+- bump increments the counter and returns the new value.
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 2 :: unit=math.(Counter).Counter :: pass=baseline ==
+You are reviewing C++ code for logical correctness.
+
+```
+Counter::Counter() : n(0) {}
+```
+
+## Receiver Type: type Counter
+Counter accumulates bumps into a running total.
+
+```
+class Counter {
+public:
+    Counter();
+    // bump increments the counter and returns the new value.
+    int bump();
+    // value returns the current counter.
+    int value() const;
+
+private:
+    int n;
+};
+
+// is_even reports whether n is even via mutual recursion with is_odd.
+bool is_even(int n);
+
+// is_odd reports whether n is odd via mutual recursion with is_even.
+bool is_odd(int n);
+
+} // namespace math
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- value returns the current counter.
+- bump increments the counter and returns the new value.
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 3 :: unit=math.add :: pass=summary ==
+You are analyzing a C++ function to create a summary of its behavior.
+
+```
+int add(int a, int b) {
+    return a + b;
+}
 ```
 
 Analyze this function and respond with JSON in this exact format:
@@ -31,11 +212,13 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 1 :: unit=math.(Counter).Counter :: pass=baseline ==
+== prompt 4 :: unit=math.add :: pass=baseline ==
 You are reviewing C++ code for logical correctness.
 
 ```
-Counter::Counter() : n(0) {}
+int add(int a, int b) {
+    return a + b;
+}
 ```
 
 ## Function Summary
@@ -73,74 +256,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 2 :: unit=math.add :: pass=summary ==
-You are analyzing a C++ function to create a summary of its behavior.
-
-```
-int add(int a, int b) {
-    return a + b;
-}
-```
-
-Analyze this function and respond with JSON in this exact format:
-{
-  "purpose": "One sentence describing what this function does",
-  "behavior": "How it behaves - side effects, return conditions, error cases",
-  "invariants": ["preconditions", "postconditions", "guarantees"],
-  "security": ["security-relevant properties for callers to know"]
-}
-
-Field guidance:
-- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
-- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
-- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
-- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
-
-== prompt 3 :: unit=math.add :: pass=baseline ==
-You are reviewing C++ code for logical correctness.
-
-```
-int add(int a, int b) {
-    return a + b;
-}
-```
-
-## Function Summary
-Purpose: test purpose
-Behavior: test behavior
-Invariants:
-- test invariant
-
-Does this function correctly implement what it claims to do? Look for:
-
-Implementation vs. Intent:
-- Behavior that contradicts the declared purpose, invariants, or documented error conditions
-- A code path that returns success when it should return an error, or vice versa
-- A precondition stated in the summary that the implementation does not actually enforce
-
-Logic Errors:
-- Inverted boolean conditions (== where != is needed, < where > is needed)
-- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
-- Off-by-one errors in loop bounds, index expressions, or size calculations
-- Unreachable code following an unconditional return, panic, or continue
-- A switch or if-else chain that silently omits a case that must be handled
-- Integer overflow or underflow in arithmetic that is not guarded
-
-Control Flow:
-- A loop that cannot terminate under reachable inputs
-- Early return that skips required cleanup or postcondition logic
-- Error path that falls through to success-path code
-
-Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
-
-Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
-
-Example:
-{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
-
-If no issues found, return {"issues": []}.
-
-== prompt 4 :: unit=math.(Counter).bump :: pass=summary ==
+== prompt 5 :: unit=math.(Counter).bump :: pass=summary ==
 You are analyzing a C++ function to create a summary of its behavior.
 
 ```
@@ -149,6 +265,40 @@ int Counter::bump() {
     return n;
 }
 ```
+
+## Receiver Type: type Counter
+Counter accumulates bumps into a running total.
+
+```
+class Counter {
+public:
+    Counter();
+    // bump increments the counter and returns the new value.
+    int bump();
+    // value returns the current counter.
+    int value() const;
+
+private:
+    int n;
+};
+
+// is_even reports whether n is even via mutual recursion with is_odd.
+bool is_even(int n);
+
+// is_odd reports whether n is odd via mutual recursion with is_even.
+bool is_odd(int n);
+
+} // namespace math
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- No documentation available.
+- value returns the current counter.
 
 ## Called Functions
 
@@ -172,7 +322,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 5 :: unit=math.(Counter).bump :: pass=baseline ==
+== prompt 6 :: unit=math.(Counter).bump :: pass=baseline ==
 You are reviewing C++ code for logical correctness.
 
 ```
@@ -181,6 +331,40 @@ int Counter::bump() {
     return n;
 }
 ```
+
+## Receiver Type: type Counter
+Counter accumulates bumps into a running total.
+
+```
+class Counter {
+public:
+    Counter();
+    // bump increments the counter and returns the new value.
+    int bump();
+    // value returns the current counter.
+    int value() const;
+
+private:
+    int n;
+};
+
+// is_even reports whether n is even via mutual recursion with is_odd.
+bool is_even(int n);
+
+// is_odd reports whether n is odd via mutual recursion with is_even.
+bool is_odd(int n);
+
+} // namespace math
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- No documentation available.
+- value returns the current counter.
 
 ## Function Summary
 Purpose: test purpose
@@ -217,7 +401,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 6 :: unit=math.(Counter).value :: pass=summary ==
+== prompt 7 :: unit=math.(Counter).value :: pass=summary ==
 You are analyzing a C++ function to create a summary of its behavior.
 
 ```
@@ -225,6 +409,40 @@ int Counter::value() const {
     return n;
 }
 ```
+
+## Receiver Type: type Counter
+Counter accumulates bumps into a running total.
+
+```
+class Counter {
+public:
+    Counter();
+    // bump increments the counter and returns the new value.
+    int bump();
+    // value returns the current counter.
+    int value() const;
+
+private:
+    int n;
+};
+
+// is_even reports whether n is even via mutual recursion with is_odd.
+bool is_even(int n);
+
+// is_odd reports whether n is odd via mutual recursion with is_even.
+bool is_odd(int n);
+
+} // namespace math
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- No documentation available.
+- bump increments the counter and returns the new value.
 
 Analyze this function and respond with JSON in this exact format:
 {
@@ -240,7 +458,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 7 :: unit=math.(Counter).value :: pass=baseline ==
+== prompt 8 :: unit=math.(Counter).value :: pass=baseline ==
 You are reviewing C++ code for logical correctness.
 
 ```
@@ -248,6 +466,40 @@ int Counter::value() const {
     return n;
 }
 ```
+
+## Receiver Type: type Counter
+Counter accumulates bumps into a running total.
+
+```
+class Counter {
+public:
+    Counter();
+    // bump increments the counter and returns the new value.
+    int bump();
+    // value returns the current counter.
+    int value() const;
+
+private:
+    int n;
+};
+
+// is_even reports whether n is even via mutual recursion with is_odd.
+bool is_even(int n);
+
+// is_odd reports whether n is odd via mutual recursion with is_even.
+bool is_odd(int n);
+
+} // namespace math
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- No documentation available.
+- bump increments the counter and returns the new value.
 
 ## Function Summary
 Purpose: test purpose
@@ -284,7 +536,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 8 :: unit=math.multiply :: pass=summary ==
+== prompt 9 :: unit=math.multiply :: pass=summary ==
 You are analyzing a C++ function to create a summary of its behavior.
 
 ```
@@ -319,7 +571,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 9 :: unit=math.multiply :: pass=baseline ==
+== prompt 10 :: unit=math.multiply :: pass=baseline ==
 You are reviewing C++ code for logical correctness.
 
 ```
@@ -367,7 +619,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 10 :: unit=math.is_even+math.is_odd :: pass=summary ==
+== prompt 11 :: unit=math.is_even+math.is_odd :: pass=summary ==
 You are analyzing a C++ function to create a summary of its behavior.
 
 
@@ -408,7 +660,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 11 :: unit=math.is_even+math.is_odd :: pass=baseline ==
+== prompt 12 :: unit=math.is_even+math.is_odd :: pass=baseline ==
 You are reviewing C++ code for logical correctness.
 
 
@@ -470,7 +722,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 12 :: unit=.main :: pass=summary ==
+== prompt 13 :: unit=.main :: pass=summary ==
 You are analyzing a C++ function to create a summary of its behavior.
 
 ```
@@ -545,7 +797,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 13 :: unit=.main :: pass=baseline ==
+== prompt 14 :: unit=.main :: pass=baseline ==
 You are reviewing C++ code for logical correctness.
 
 ```

@@ -8,13 +8,47 @@ units (8):
   [5] rust_example.is_even+rust_example.is_odd (callees=[])
   [6] rust_example.multiply (callees=[rust_example.add])
   [7] rust_example.main (callees=[rust_example.add rust_example.multiply rust_example.(Counter).new rust_example.(Counter).bump rust_example.(Counter).value rust_example.is_even+rust_example.is_odd])
+types (1):
+  rust_example.Counter (struct, methods=[rust_example.(Counter).new rust_example.(Counter).bump rust_example.(Counter).value rust_example.(Counter).default])
 external symbols (4):
   core/cmp/impls::eq
   core/ops/arith::add
   core/ops/arith::sub
   std/macros::println
 
-== prompt 0 :: unit=rust_example.add :: pass=summary ==
+== prompt 0 :: type=rust_example.Counter :: pass=type_summary ==
+You are analyzing a Rust struct named Counter to summarize what it represents.
+
+```
+/// Counter accumulates bumps into a running total.
+pub struct Counter {
+    n: i32,
+}
+```
+
+Documentation: Counter accumulates bumps into a running total.
+
+Methods:
+- `pub fn new() -> Self` — Creates a zeroed Counter.
+- `pub fn bump(&mut self) -> i32` — Increments the counter by one and returns the new value.
+- `pub fn value(&self) -> i32` — Returns the current counter value.
+- `fn default() -> Self` — Returns the "default value" for a type. Default values are often some kind of initial value, identity value, or anything else that may make sense as a default. # Examples Using built-in default values: ``` let i: i8 = Default::default(); let (x, y): (Option<String>, f64) = Default::default(); let (a, b, (c, d)): (i32, u32, (bool, bool)) = Default::default(); ``` Making your own: ``` # #[allow(dead_code)] enum Kind { A, B, C, } impl Default for Kind { fn default() -> Self { Kind::A } } ```
+
+Analyze this struct and respond with JSON in this exact format:
+{
+  "purpose": "One sentence: what this struct represents, from a caller's perspective",
+  "behavior": "Lifecycle, mutability, and how instances behave across method calls",
+  "invariants": ["invariants that hold across all method calls"],
+  "security": ["security-relevant state, contracts, or data this type is responsible for"]
+}
+
+Field guidance:
+- purpose: describe the concept the type models, not the syntactic shape (e.g. "a thread-safe counter", not "a struct with an int field")
+- behavior: lifetime, mutability, thread-safety, cloneability, and any state transitions enforced by the methods
+- invariants: conditions the type guarantees to hold between method calls (e.g. "value is always non-negative"); empty array if none apply
+- security: sensitive data held, trust boundaries crossed, validation responsibilities; empty array if nothing security-relevant applies
+
+== prompt 1 :: unit=rust_example.add :: pass=summary ==
 You are analyzing a Rust function to create a summary of its behavior.
 
 ```
@@ -43,7 +77,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 1 :: unit=rust_example.add :: pass=baseline ==
+== prompt 2 :: unit=rust_example.add :: pass=baseline ==
 You are reviewing Rust code for logical correctness.
 
 ```
@@ -88,7 +122,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 2 :: unit=rust_example.(Counter).bump :: pass=summary ==
+== prompt 3 :: unit=rust_example.(Counter).bump :: pass=summary ==
 You are analyzing a Rust function to create a summary of its behavior.
 
 ```
@@ -98,6 +132,26 @@ You are analyzing a Rust function to create a summary of its behavior.
         self.n
     }
 ```
+
+## Receiver Type: struct Counter
+Counter accumulates bumps into a running total.
+
+```
+/// Counter accumulates bumps into a running total.
+pub struct Counter {
+    n: i32,
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `pub fn new() -> Self` — Creates a zeroed Counter.
+- `pub fn value(&self) -> i32` — Returns the current counter value.
+- `fn default() -> Self` — Returns the "default value" for a type. Default values are often some kind of initial value, identity value, or anything else that may make sense as a default. # Examples Using built-in default values: ``` let i: i8 = Default::default(); let (x, y): (Option<String>, f64) = Default::default(); let (a, b, (c, d)): (i32, u32, (bool, bool)) = Default::default(); ``` Making your own: ``` # #[allow(dead_code)] enum Kind { A, B, C, } impl Default for Kind { fn default() -> Self { Kind::A } } ```
 
 ## Called Functions
 
@@ -121,7 +175,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 3 :: unit=rust_example.(Counter).bump :: pass=baseline ==
+== prompt 4 :: unit=rust_example.(Counter).bump :: pass=baseline ==
 You are reviewing Rust code for logical correctness.
 
 ```
@@ -131,6 +185,26 @@ You are reviewing Rust code for logical correctness.
         self.n
     }
 ```
+
+## Receiver Type: struct Counter
+Counter accumulates bumps into a running total.
+
+```
+/// Counter accumulates bumps into a running total.
+pub struct Counter {
+    n: i32,
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `pub fn new() -> Self` — Creates a zeroed Counter.
+- `pub fn value(&self) -> i32` — Returns the current counter value.
+- `fn default() -> Self` — Returns the "default value" for a type. Default values are often some kind of initial value, identity value, or anything else that may make sense as a default. # Examples Using built-in default values: ``` let i: i8 = Default::default(); let (x, y): (Option<String>, f64) = Default::default(); let (a, b, (c, d)): (i32, u32, (bool, bool)) = Default::default(); ``` Making your own: ``` # #[allow(dead_code)] enum Kind { A, B, C, } impl Default for Kind { fn default() -> Self { Kind::A } } ```
 
 ## Function Summary
 Purpose: test purpose
@@ -167,7 +241,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 4 :: unit=rust_example.(Counter).new :: pass=summary ==
+== prompt 5 :: unit=rust_example.(Counter).new :: pass=summary ==
 You are analyzing a Rust function to create a summary of its behavior.
 
 ```
@@ -176,6 +250,26 @@ You are analyzing a Rust function to create a summary of its behavior.
         Self { n: 0 }
     }
 ```
+
+## Receiver Type: struct Counter
+Counter accumulates bumps into a running total.
+
+```
+/// Counter accumulates bumps into a running total.
+pub struct Counter {
+    n: i32,
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `pub fn bump(&mut self) -> i32` — Increments the counter by one and returns the new value.
+- `pub fn value(&self) -> i32` — Returns the current counter value.
+- `fn default() -> Self` — Returns the "default value" for a type. Default values are often some kind of initial value, identity value, or anything else that may make sense as a default. # Examples Using built-in default values: ``` let i: i8 = Default::default(); let (x, y): (Option<String>, f64) = Default::default(); let (a, b, (c, d)): (i32, u32, (bool, bool)) = Default::default(); ``` Making your own: ``` # #[allow(dead_code)] enum Kind { A, B, C, } impl Default for Kind { fn default() -> Self { Kind::A } } ```
 
 Analyze this function and respond with JSON in this exact format:
 {
@@ -191,7 +285,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 5 :: unit=rust_example.(Counter).new :: pass=baseline ==
+== prompt 6 :: unit=rust_example.(Counter).new :: pass=baseline ==
 You are reviewing Rust code for logical correctness.
 
 ```
@@ -200,6 +294,26 @@ You are reviewing Rust code for logical correctness.
         Self { n: 0 }
     }
 ```
+
+## Receiver Type: struct Counter
+Counter accumulates bumps into a running total.
+
+```
+/// Counter accumulates bumps into a running total.
+pub struct Counter {
+    n: i32,
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `pub fn bump(&mut self) -> i32` — Increments the counter by one and returns the new value.
+- `pub fn value(&self) -> i32` — Returns the current counter value.
+- `fn default() -> Self` — Returns the "default value" for a type. Default values are often some kind of initial value, identity value, or anything else that may make sense as a default. # Examples Using built-in default values: ``` let i: i8 = Default::default(); let (x, y): (Option<String>, f64) = Default::default(); let (a, b, (c, d)): (i32, u32, (bool, bool)) = Default::default(); ``` Making your own: ``` # #[allow(dead_code)] enum Kind { A, B, C, } impl Default for Kind { fn default() -> Self { Kind::A } } ```
 
 ## Function Summary
 Purpose: test purpose
@@ -236,7 +350,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 6 :: unit=rust_example.(Counter).default :: pass=summary ==
+== prompt 7 :: unit=rust_example.(Counter).default :: pass=summary ==
 You are analyzing a Rust function to create a summary of its behavior.
 
 ```
@@ -244,6 +358,26 @@ You are analyzing a Rust function to create a summary of its behavior.
         Counter::new()
     }
 ```
+
+## Receiver Type: struct Counter
+Counter accumulates bumps into a running total.
+
+```
+/// Counter accumulates bumps into a running total.
+pub struct Counter {
+    n: i32,
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `pub fn new() -> Self` — Creates a zeroed Counter.
+- `pub fn bump(&mut self) -> i32` — Increments the counter by one and returns the new value.
+- `pub fn value(&self) -> i32` — Returns the current counter value.
 
 ## Called Functions
 
@@ -267,7 +401,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 7 :: unit=rust_example.(Counter).default :: pass=baseline ==
+== prompt 8 :: unit=rust_example.(Counter).default :: pass=baseline ==
 You are reviewing Rust code for logical correctness.
 
 ```
@@ -275,6 +409,26 @@ You are reviewing Rust code for logical correctness.
         Counter::new()
     }
 ```
+
+## Receiver Type: struct Counter
+Counter accumulates bumps into a running total.
+
+```
+/// Counter accumulates bumps into a running total.
+pub struct Counter {
+    n: i32,
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `pub fn new() -> Self` — Creates a zeroed Counter.
+- `pub fn bump(&mut self) -> i32` — Increments the counter by one and returns the new value.
+- `pub fn value(&self) -> i32` — Returns the current counter value.
 
 ## Function Summary
 Purpose: test purpose
@@ -311,7 +465,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 8 :: unit=rust_example.(Counter).value :: pass=summary ==
+== prompt 9 :: unit=rust_example.(Counter).value :: pass=summary ==
 You are analyzing a Rust function to create a summary of its behavior.
 
 ```
@@ -320,6 +474,26 @@ You are analyzing a Rust function to create a summary of its behavior.
         self.n
     }
 ```
+
+## Receiver Type: struct Counter
+Counter accumulates bumps into a running total.
+
+```
+/// Counter accumulates bumps into a running total.
+pub struct Counter {
+    n: i32,
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `pub fn new() -> Self` — Creates a zeroed Counter.
+- `pub fn bump(&mut self) -> i32` — Increments the counter by one and returns the new value.
+- `fn default() -> Self` — Returns the "default value" for a type. Default values are often some kind of initial value, identity value, or anything else that may make sense as a default. # Examples Using built-in default values: ``` let i: i8 = Default::default(); let (x, y): (Option<String>, f64) = Default::default(); let (a, b, (c, d)): (i32, u32, (bool, bool)) = Default::default(); ``` Making your own: ``` # #[allow(dead_code)] enum Kind { A, B, C, } impl Default for Kind { fn default() -> Self { Kind::A } } ```
 
 Analyze this function and respond with JSON in this exact format:
 {
@@ -335,7 +509,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 9 :: unit=rust_example.(Counter).value :: pass=baseline ==
+== prompt 10 :: unit=rust_example.(Counter).value :: pass=baseline ==
 You are reviewing Rust code for logical correctness.
 
 ```
@@ -344,6 +518,26 @@ You are reviewing Rust code for logical correctness.
         self.n
     }
 ```
+
+## Receiver Type: struct Counter
+Counter accumulates bumps into a running total.
+
+```
+/// Counter accumulates bumps into a running total.
+pub struct Counter {
+    n: i32,
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `pub fn new() -> Self` — Creates a zeroed Counter.
+- `pub fn bump(&mut self) -> i32` — Increments the counter by one and returns the new value.
+- `fn default() -> Self` — Returns the "default value" for a type. Default values are often some kind of initial value, identity value, or anything else that may make sense as a default. # Examples Using built-in default values: ``` let i: i8 = Default::default(); let (x, y): (Option<String>, f64) = Default::default(); let (a, b, (c, d)): (i32, u32, (bool, bool)) = Default::default(); ``` Making your own: ``` # #[allow(dead_code)] enum Kind { A, B, C, } impl Default for Kind { fn default() -> Self { Kind::A } } ```
 
 ## Function Summary
 Purpose: test purpose
@@ -380,7 +574,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 10 :: unit=rust_example.is_even+rust_example.is_odd :: pass=summary ==
+== prompt 11 :: unit=rust_example.is_even+rust_example.is_odd :: pass=summary ==
 You are analyzing a Rust function to create a summary of its behavior.
 
 
@@ -431,7 +625,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 11 :: unit=rust_example.is_even+rust_example.is_odd :: pass=baseline ==
+== prompt 12 :: unit=rust_example.is_even+rust_example.is_odd :: pass=baseline ==
 You are reviewing Rust code for logical correctness.
 
 
@@ -495,7 +689,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 12 :: unit=rust_example.multiply :: pass=summary ==
+== prompt 13 :: unit=rust_example.multiply :: pass=summary ==
 You are analyzing a Rust function to create a summary of its behavior.
 
 ```
@@ -531,7 +725,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 13 :: unit=rust_example.multiply :: pass=baseline ==
+== prompt 14 :: unit=rust_example.multiply :: pass=baseline ==
 You are reviewing Rust code for logical correctness.
 
 ```
@@ -580,7 +774,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 14 :: unit=rust_example.main :: pass=summary ==
+== prompt 15 :: unit=rust_example.main :: pass=summary ==
 You are analyzing a Rust function to create a summary of its behavior.
 
 ```
@@ -653,7 +847,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 15 :: unit=rust_example.main :: pass=baseline ==
+== prompt 16 :: unit=rust_example.main :: pass=baseline ==
 You are reviewing Rust code for logical correctness.
 
 ```

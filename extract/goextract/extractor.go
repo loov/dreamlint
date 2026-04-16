@@ -21,6 +21,8 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 	}
 
 	funcs := ExtractFunctions(pkgs)
+	types := ExtractTypes(pkgs)
+	typesByID := LinkMethodsToTypes(funcs, types)
 	graph := BuildCallgraph(pkgs)
 	external := ExtractExternalFuncs(pkgs, graph)
 	units := extract.BuildAnalysisUnits(funcs, graph)
@@ -28,6 +30,7 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 	return &extract.Result{
 		Units:    units,
 		External: external,
+		Types:    typesByID,
 		Language: "Go",
 	}, nil
 }

@@ -1,5 +1,6 @@
 You are reviewing {{.Language}} code for maintainability issues.
 {{template "function-context" .}}
+{{- template "receiver-type-context" .}}
 {{- template "summary-context" .}}
 
 ## Maintainability Review Checklist

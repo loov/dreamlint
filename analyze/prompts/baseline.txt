@@ -1,5 +1,6 @@
 You are reviewing {{.Language}} code for logical correctness.
 {{template "function-context" .}}
+{{- template "receiver-type-context" .}}
 {{- template "summary-context" .}}
 
 Does this function correctly implement what it claims to do? Look for:

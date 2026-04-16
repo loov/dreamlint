@@ -1,5 +1,6 @@
 You are reviewing {{.Language}} code for concurrency issues.
 {{template "function-context" .}}
+{{- template "receiver-type-context" .}}
 {{- template "summary-context" .}}
 {{- template "callees-context" .}}
 {{- template "external-funcs-context" .}}

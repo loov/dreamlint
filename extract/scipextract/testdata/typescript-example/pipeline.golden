@@ -7,10 +7,57 @@ units (7):
   [4] typescript-example/src/math.ts.(Counter).value (callees=[])
   [5] typescript-example/src/math.ts.isEven+typescript-example/src/math.ts.isOdd (callees=[])
   [6] typescript-example/src/main.ts.main (callees=[typescript-example/src/math.ts.add typescript-example/src/math.ts.multiply typescript-example/src/math.ts.(Counter).<constructor> typescript-example/src/math.ts.(Counter).bump typescript-example/src/math.ts.(Counter).value typescript-example/src/math.ts.isEven+typescript-example/src/math.ts.isOdd])
+types (1):
+  typescript-example/src/math.ts.Counter (type, methods=[typescript-example/src/math.ts.(Counter).<constructor> typescript-example/src/math.ts.(Counter).bump typescript-example/src/math.ts.(Counter).value])
 external symbols (1):
   typescript/lib/lib.dom.d.ts::log
 
-== prompt 0 :: unit=typescript-example/src/math.ts.add :: pass=summary ==
+== prompt 0 :: type=typescript-example/src/math.ts.Counter :: pass=type_summary ==
+You are analyzing a TypeScript type named Counter to summarize what it represents.
+
+```
+export class Counter {
+    private n: number;
+
+    constructor() {
+        this.n = 0;
+    }
+
+    /** Increments the counter and returns the new value. */
+    bump(): number {
+        this.n = add(this.n, 1);
+        return this.n;
+    }
+
+    /** Returns the current counter value. */
+    value(): number {
+        return this.n;
+    }
+}
+```
+
+Documentation: Counter accumulates bumps into a running total.
+
+Methods:
+- `constructor(): Counter` — Counter accumulates bumps into a running total.
+- `(method) bump(): number` — Increments the counter and returns the new value.
+- `(method) value(): number` — Returns the current counter value.
+
+Analyze this type and respond with JSON in this exact format:
+{
+  "purpose": "One sentence: what this type represents, from a caller's perspective",
+  "behavior": "Lifecycle, mutability, and how instances behave across method calls",
+  "invariants": ["invariants that hold across all method calls"],
+  "security": ["security-relevant state, contracts, or data this type is responsible for"]
+}
+
+Field guidance:
+- purpose: describe the concept the type models, not the syntactic shape (e.g. "a thread-safe counter", not "a struct with an int field")
+- behavior: lifetime, mutability, thread-safety, cloneability, and any state transitions enforced by the methods
+- invariants: conditions the type guarantees to hold between method calls (e.g. "value is always non-negative"); empty array if none apply
+- security: sensitive data held, trust boundaries crossed, validation responsibilities; empty array if nothing security-relevant applies
+
+== prompt 1 :: unit=typescript-example/src/math.ts.add :: pass=summary ==
 You are analyzing a TypeScript function to create a summary of its behavior.
 
 ```
@@ -33,7 +80,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 1 :: unit=typescript-example/src/math.ts.add :: pass=baseline ==
+== prompt 2 :: unit=typescript-example/src/math.ts.add :: pass=baseline ==
 You are reviewing TypeScript code for logical correctness.
 
 ```
@@ -77,7 +124,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 2 :: unit=typescript-example/src/math.ts.multiply :: pass=summary ==
+== prompt 3 :: unit=typescript-example/src/math.ts.multiply :: pass=summary ==
 You are analyzing a TypeScript function to create a summary of its behavior.
 
 ```
@@ -112,7 +159,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 3 :: unit=typescript-example/src/math.ts.multiply :: pass=baseline ==
+== prompt 4 :: unit=typescript-example/src/math.ts.multiply :: pass=baseline ==
 You are reviewing TypeScript code for logical correctness.
 
 ```
@@ -160,7 +207,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 4 :: unit=typescript-example/src/math.ts.(Counter).<constructor> :: pass=summary ==
+== prompt 5 :: unit=typescript-example/src/math.ts.(Counter).<constructor> :: pass=summary ==
 You are analyzing a TypeScript function to create a summary of its behavior.
 
 ```
@@ -168,6 +215,39 @@ You are analyzing a TypeScript function to create a summary of its behavior.
         this.n = 0;
     }
 ```
+
+## Receiver Type: type Counter
+Counter accumulates bumps into a running total.
+
+```
+export class Counter {
+    private n: number;
+
+    constructor() {
+        this.n = 0;
+    }
+
+    /** Increments the counter and returns the new value. */
+    bump(): number {
+        this.n = add(this.n, 1);
+        return this.n;
+    }
+
+    /** Returns the current counter value. */
+    value(): number {
+        return this.n;
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `(method) bump(): number` — Increments the counter and returns the new value.
+- `(method) value(): number` — Returns the current counter value.
 
 Analyze this function and respond with JSON in this exact format:
 {
@@ -183,7 +263,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 5 :: unit=typescript-example/src/math.ts.(Counter).<constructor> :: pass=baseline ==
+== prompt 6 :: unit=typescript-example/src/math.ts.(Counter).<constructor> :: pass=baseline ==
 You are reviewing TypeScript code for logical correctness.
 
 ```
@@ -191,6 +271,39 @@ You are reviewing TypeScript code for logical correctness.
         this.n = 0;
     }
 ```
+
+## Receiver Type: type Counter
+Counter accumulates bumps into a running total.
+
+```
+export class Counter {
+    private n: number;
+
+    constructor() {
+        this.n = 0;
+    }
+
+    /** Increments the counter and returns the new value. */
+    bump(): number {
+        this.n = add(this.n, 1);
+        return this.n;
+    }
+
+    /** Returns the current counter value. */
+    value(): number {
+        return this.n;
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `(method) bump(): number` — Increments the counter and returns the new value.
+- `(method) value(): number` — Returns the current counter value.
 
 ## Function Summary
 Purpose: test purpose
@@ -227,7 +340,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 6 :: unit=typescript-example/src/math.ts.(Counter).bump :: pass=summary ==
+== prompt 7 :: unit=typescript-example/src/math.ts.(Counter).bump :: pass=summary ==
 You are analyzing a TypeScript function to create a summary of its behavior.
 
 ```
@@ -236,6 +349,39 @@ You are analyzing a TypeScript function to create a summary of its behavior.
         return this.n;
     }
 ```
+
+## Receiver Type: type Counter
+Counter accumulates bumps into a running total.
+
+```
+export class Counter {
+    private n: number;
+
+    constructor() {
+        this.n = 0;
+    }
+
+    /** Increments the counter and returns the new value. */
+    bump(): number {
+        this.n = add(this.n, 1);
+        return this.n;
+    }
+
+    /** Returns the current counter value. */
+    value(): number {
+        return this.n;
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `constructor(): Counter` — Counter accumulates bumps into a running total.
+- `(method) value(): number` — Returns the current counter value.
 
 ## Called Functions
 
@@ -259,7 +405,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 7 :: unit=typescript-example/src/math.ts.(Counter).bump :: pass=baseline ==
+== prompt 8 :: unit=typescript-example/src/math.ts.(Counter).bump :: pass=baseline ==
 You are reviewing TypeScript code for logical correctness.
 
 ```
@@ -268,6 +414,39 @@ You are reviewing TypeScript code for logical correctness.
         return this.n;
     }
 ```
+
+## Receiver Type: type Counter
+Counter accumulates bumps into a running total.
+
+```
+export class Counter {
+    private n: number;
+
+    constructor() {
+        this.n = 0;
+    }
+
+    /** Increments the counter and returns the new value. */
+    bump(): number {
+        this.n = add(this.n, 1);
+        return this.n;
+    }
+
+    /** Returns the current counter value. */
+    value(): number {
+        return this.n;
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `constructor(): Counter` — Counter accumulates bumps into a running total.
+- `(method) value(): number` — Returns the current counter value.
 
 ## Function Summary
 Purpose: test purpose
@@ -304,7 +483,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 8 :: unit=typescript-example/src/math.ts.(Counter).value :: pass=summary ==
+== prompt 9 :: unit=typescript-example/src/math.ts.(Counter).value :: pass=summary ==
 You are analyzing a TypeScript function to create a summary of its behavior.
 
 ```
@@ -312,6 +491,39 @@ You are analyzing a TypeScript function to create a summary of its behavior.
         return this.n;
     }
 ```
+
+## Receiver Type: type Counter
+Counter accumulates bumps into a running total.
+
+```
+export class Counter {
+    private n: number;
+
+    constructor() {
+        this.n = 0;
+    }
+
+    /** Increments the counter and returns the new value. */
+    bump(): number {
+        this.n = add(this.n, 1);
+        return this.n;
+    }
+
+    /** Returns the current counter value. */
+    value(): number {
+        return this.n;
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `constructor(): Counter` — Counter accumulates bumps into a running total.
+- `(method) bump(): number` — Increments the counter and returns the new value.
 
 Analyze this function and respond with JSON in this exact format:
 {
@@ -327,7 +539,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 9 :: unit=typescript-example/src/math.ts.(Counter).value :: pass=baseline ==
+== prompt 10 :: unit=typescript-example/src/math.ts.(Counter).value :: pass=baseline ==
 You are reviewing TypeScript code for logical correctness.
 
 ```
@@ -335,6 +547,39 @@ You are reviewing TypeScript code for logical correctness.
         return this.n;
     }
 ```
+
+## Receiver Type: type Counter
+Counter accumulates bumps into a running total.
+
+```
+export class Counter {
+    private n: number;
+
+    constructor() {
+        this.n = 0;
+    }
+
+    /** Increments the counter and returns the new value. */
+    bump(): number {
+        this.n = add(this.n, 1);
+        return this.n;
+    }
+
+    /** Returns the current counter value. */
+    value(): number {
+        return this.n;
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `constructor(): Counter` — Counter accumulates bumps into a running total.
+- `(method) bump(): number` — Increments the counter and returns the new value.
 
 ## Function Summary
 Purpose: test purpose
@@ -371,7 +616,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 10 :: unit=typescript-example/src/math.ts.isEven+typescript-example/src/math.ts.isOdd :: pass=summary ==
+== prompt 11 :: unit=typescript-example/src/math.ts.isEven+typescript-example/src/math.ts.isOdd :: pass=summary ==
 You are analyzing a TypeScript function to create a summary of its behavior.
 
 
@@ -410,7 +655,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 11 :: unit=typescript-example/src/math.ts.isEven+typescript-example/src/math.ts.isOdd :: pass=baseline ==
+== prompt 12 :: unit=typescript-example/src/math.ts.isEven+typescript-example/src/math.ts.isOdd :: pass=baseline ==
 You are reviewing TypeScript code for logical correctness.
 
 
@@ -470,7 +715,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 12 :: unit=typescript-example/src/main.ts.main :: pass=summary ==
+== prompt 13 :: unit=typescript-example/src/main.ts.main :: pass=summary ==
 You are analyzing a TypeScript function to create a summary of its behavior.
 
 ```
@@ -543,7 +788,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 13 :: unit=typescript-example/src/main.ts.main :: pass=baseline ==
+== prompt 14 :: unit=typescript-example/src/main.ts.main :: pass=baseline ==
 You are reviewing TypeScript code for logical correctness.
 
 ```

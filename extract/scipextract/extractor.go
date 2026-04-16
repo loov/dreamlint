@@ -56,51 +56,96 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 
 	src := newSourceCache(root)
 
-	// Pass 1: identify function symbols and assign ids. No body extraction
-	// yet — we need the per-doc definition ranges (computed in pass 2)
-	// before we can pick the right span for each function.
-	type entry struct {
+	// Pass 1: identify function and type symbols and assign ids. No body
+	// extraction yet — we need the per-doc definition ranges (computed in
+	// pass 2) before we can pick the right span for each function/type.
+	type fnEntry struct {
 		info    *scip.SymbolInformation
 		doc     *scip.Document
 		absPath string
 		fn      *extract.FunctionInfo
 	}
-	var entries []entry
+	type typeEntry struct {
+		info    *scip.SymbolInformation
+		doc     *scip.Document
+		absPath string
+		ti      *extract.TypeInfo
+	}
+	var fnEntries []fnEntry
+	var typeEntries []typeEntry
 	var funcs []*extract.FunctionInfo
 	symbolToID := make(map[string]string)
+	typesBySymbol := make(map[string]*extract.TypeInfo)
+	typeSymbolSet := make(map[string]bool)
 	for _, doc := range docs {
 		absPath := filepath.Join(root, doc.RelativePath)
 		for _, sym := range doc.Symbols {
-			if !isFunctionSymbol(sym) {
-				continue
+			switch {
+			case isFunctionSymbol(sym):
+				if _, dup := symbolToID[sym.Symbol]; dup {
+					continue
+				}
+				fn := buildFunctionInfo(sym, doc, absPath)
+				if fn == nil {
+					continue
+				}
+				symbolToID[sym.Symbol] = functionID(fn)
+				fnEntries = append(fnEntries, fnEntry{info: sym, doc: doc, absPath: absPath, fn: fn})
+				funcs = append(funcs, fn)
+			case isTypeSymbol(sym):
+				if _, dup := typesBySymbol[sym.Symbol]; dup {
+					continue
+				}
+				ti := buildTypeInfo(sym, doc, absPath)
+				if ti == nil {
+					continue
+				}
+				typesBySymbol[sym.Symbol] = ti
+				typeSymbolSet[sym.Symbol] = true
+				typeEntries = append(typeEntries, typeEntry{info: sym, doc: doc, absPath: absPath, ti: ti})
 			}
-			if _, dup := symbolToID[sym.Symbol]; dup {
-				continue
-			}
-			fn := buildFunctionInfo(sym, doc, absPath)
-			if fn == nil {
-				continue
-			}
-			symbolToID[sym.Symbol] = functionID(fn)
-			entries = append(entries, entry{info: sym, doc: doc, absPath: absPath, fn: fn})
-			funcs = append(funcs, fn)
 		}
 	}
 
 	// Pass 2: per-doc definition ranges (with span-to-next-function fallback).
 	docRanges := make(map[*scip.Document]map[string]scip.Range, len(docs))
+	docTypeRanges := make(map[*scip.Document]map[string]scip.Range, len(docs))
 	for _, doc := range docs {
 		docRanges[doc] = definitionRanges(doc, symbolToID)
+		docTypeRanges[doc] = typeDefinitionRanges(doc, typeSymbolSet)
 	}
 
 	// Pass 3: bodies use the shared ranges so indexers without
 	// EnclosingRange (e.g. scip-clang) still get useful function bodies.
-	for _, e := range entries {
+	for _, e := range fnEntries {
 		body, warn := extractBody(e.info, e.doc, e.absPath, docRanges[e.doc], src)
 		e.fn.Body = body
 		if warn != "" {
 			fmt.Fprintf(os.Stderr, "scipextract: %s\n", warn)
 		}
+	}
+	for _, e := range typeEntries {
+		e.ti.Body = extractTypeBody(e.info, e.doc, e.absPath, docTypeRanges[e.doc], src)
+	}
+
+	// Link methods to their receiver type (by package + receiver name,
+	// which matches how types are keyed). External receivers stay
+	// unlinked.
+	types := make(map[string]*extract.TypeInfo, len(typeEntries))
+	for _, e := range typeEntries {
+		types[typeID(e.ti)] = e.ti
+	}
+	for _, fn := range funcs {
+		if fn.Receiver == "" {
+			continue
+		}
+		id := fn.Package + "." + fn.Receiver
+		ti, ok := types[id]
+		if !ok {
+			continue
+		}
+		fn.ReceiverType = id
+		ti.Methods = append(ti.Methods, functionID(fn))
 	}
 
 	graph, external := buildCallgraph(docs, &index, docRanges, symbolToID)
@@ -109,6 +154,7 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 	return &extract.Result{
 		Units:    units,
 		External: external,
+		Types:    types,
 		Language: pickLanguage(docs),
 	}, nil
 }

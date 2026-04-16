@@ -1,5 +1,6 @@
 You are analyzing a {{.Language}} function to create a summary of its behavior.
 {{template "function-context" .}}
+{{- template "receiver-type-context" .}}
 {{- template "callees-context" .}}
 {{- template "external-funcs-context" .}}
 

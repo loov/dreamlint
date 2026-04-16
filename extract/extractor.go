@@ -3,10 +3,12 @@ package extract
 import "context"
 
 // Result is the output of an Extractor: the analysis units (callgraph-ordered),
-// a map of external function metadata, and the source language.
+// a map of external function metadata, the user-defined types, and the
+// source language.
 type Result struct {
 	Units    []*AnalysisUnit
 	External map[string]*ExternalFunc
+	Types    map[string]*TypeInfo
 	Language string
 }
 

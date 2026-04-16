@@ -90,16 +90,23 @@ func runPipelineGoldenTest(t *testing.T, txtarFile string) {
 		t.Fatalf("load packages: %v", err)
 	}
 
-	// Extract functions
+	// Extract functions and types
 	funcs := goextract.ExtractFunctions(pkgs)
 	if len(funcs) == 0 {
 		t.Fatal("no functions found")
 	}
+	types := goextract.ExtractTypes(pkgs)
+	typesByID := goextract.LinkMethodsToTypes(funcs, types)
 
 	// Build callgraph and units
 	graph := goextract.BuildCallgraph(pkgs)
 	externalFuncs := goextract.ExtractExternalFuncs(pkgs, graph)
 	units := extract.BuildAnalysisUnits(funcs, graph)
+
+	funcByID := make(map[string]*extract.FunctionInfo, len(funcs))
+	for _, fn := range funcs {
+		funcByID[fn.ID()] = fn
+	}
 
 	// Create mock client with summary response
 	mockClient := llm.NewMockClient(
@@ -107,7 +114,7 @@ func runPipelineGoldenTest(t *testing.T, txtarFile string) {
 	)
 
 	// Create and run pipeline
-	pipeline := analyze.NewPipeline(cfg, nil, mockClient, externalFuncs)
+	pipeline := analyze.NewPipeline(cfg, nil, mockClient, externalFuncs, typesByID, funcByID)
 	if err := pipeline.LoadPrompts(); err != nil {
 		t.Fatalf("load prompts: %v", err)
 	}

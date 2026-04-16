@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -33,15 +34,19 @@ type IssueEvent struct {
 
 // Pipeline runs the analysis passes on all units
 type Pipeline struct {
-	config        *config.Config
-	cache         *cache.Cache
-	llmClient     llm.Client
-	prompts       map[string]*template.Template
-	summaries     map[string]*SummaryResponse
-	externalFuncs map[string]*extract.ExternalFunc
-	promptsFS     fs.FS
-	onProgress    ProgressCallback
-	language      string
+	config          *config.Config
+	cache           *cache.Cache
+	llmClient       llm.Client
+	prompts         map[string]*template.Template
+	typeSummaryTmpl *template.Template
+	summaries       map[string]*SummaryResponse
+	typeSummaries   map[string]*SummaryResponse
+	externalFuncs   map[string]*extract.ExternalFunc
+	types           map[string]*extract.TypeInfo
+	funcs           map[string]*extract.FunctionInfo
+	promptsFS       fs.FS
+	onProgress      ProgressCallback
+	language        string
 }
 
 // SetLanguage sets the source language used when rendering prompts.
@@ -50,15 +55,29 @@ func (p *Pipeline) SetLanguage(lang string) {
 	p.language = lang
 }
 
-// NewPipeline creates a new analysis pipeline
-func NewPipeline(cfg *config.Config, c *cache.Cache, client llm.Client, externalFuncs map[string]*extract.ExternalFunc) *Pipeline {
+// NewPipeline creates a new analysis pipeline.
+//
+// types and funcs are optional. When types is populated, AnalyzeTypes
+// can be called before the unit loop to pre-compute per-type summaries
+// that the method prompts will consume.
+func NewPipeline(
+	cfg *config.Config,
+	c *cache.Cache,
+	client llm.Client,
+	externalFuncs map[string]*extract.ExternalFunc,
+	types map[string]*extract.TypeInfo,
+	funcs map[string]*extract.FunctionInfo,
+) *Pipeline {
 	return &Pipeline{
 		config:        cfg,
 		cache:         c,
 		llmClient:     client,
 		prompts:       make(map[string]*template.Template),
 		summaries:     make(map[string]*SummaryResponse),
+		typeSummaries: make(map[string]*SummaryResponse),
 		externalFuncs: externalFuncs,
+		types:         types,
+		funcs:         funcs,
 	}
 }
 
@@ -79,7 +98,8 @@ func (p *Pipeline) reportProgress(event ProgressEvent) {
 	}
 }
 
-// LoadPrompts loads all prompt templates from config
+// LoadPrompts loads all prompt templates from config, plus the
+// built-in type_summary template used by AnalyzeTypes.
 func (p *Pipeline) LoadPrompts() error {
 	for _, pass := range p.config.Analyse {
 		if !pass.Enabled {
@@ -108,7 +128,145 @@ func (p *Pipeline) LoadPrompts() error {
 		}
 		p.prompts[pass.Name] = tmpl
 	}
+
+	// Built-in type summary prompt. Failure here is non-fatal — if the
+	// prompt can't be loaded, AnalyzeTypes will just produce empty
+	// summaries and method prompts will fall back to structural context
+	// only.
+	if p.promptsFS != nil {
+		if tmpl, err := LoadPromptFromFS(p.promptsFS, "type_summary"); err == nil {
+			p.typeSummaryTmpl = tmpl
+		}
+	}
+	if p.typeSummaryTmpl == nil {
+		if tmpl, err := LoadPrompt("builtin:type_summary"); err == nil {
+			p.typeSummaryTmpl = tmpl
+		}
+	}
 	return nil
+}
+
+// AnalyzeTypes runs a summary pass over every extracted type in the
+// project. Results are stored on the pipeline and later rendered into
+// method prompts as receiver-type context. Types without methods still
+// get summarized — their summaries are harmless and keep the cache
+// warm for future runs.
+//
+// This method is a no-op when no type_summary template was loaded or
+// the types map is empty.
+func (p *Pipeline) AnalyzeTypes(ctx context.Context) error {
+	if p.typeSummaryTmpl == nil || len(p.types) == 0 {
+		return nil
+	}
+
+	ids := make([]string, 0, len(p.types))
+	for id := range p.types {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+
+	llmCfg := p.config.LLM
+	for _, pass := range p.config.Analyse {
+		if pass.Name == "summary" && pass.LLM != nil {
+			llmCfg = *pass.LLM
+			break
+		}
+	}
+
+	for _, id := range ids {
+		ti := p.types[id]
+		cacheKey := p.typeCacheKey(ti)
+
+		var summary *SummaryResponse
+		if p.config.Cache.Enabled && p.cache != nil {
+			if data, ok := p.cache.Get(cacheKey); ok {
+				if err := json.Unmarshal(data, &summary); err == nil {
+					p.typeSummaries[id] = summary
+					continue
+				}
+			}
+		}
+
+		p.reportProgress(ProgressEvent{Phase: "type-summary"})
+
+		tctx := p.buildTypePromptContext(ti)
+		prompt, err := ExecuteTypePrompt(p.typeSummaryTmpl, tctx)
+		if err != nil {
+			return fmt.Errorf("type summary prompt for %s: %w", id, err)
+		}
+
+		resp, err := p.llmClient.Complete(ctx, llm.Request{
+			Messages: []llm.Message{{Role: "user", Content: prompt}},
+			Config: llm.ModelConfig{
+				Model:       llmCfg.Model,
+				MaxTokens:   llmCfg.MaxTokens,
+				Temperature: llmCfg.Temperature,
+				JSONSchema:  SummarySchema,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("type summary llm for %s: %w", id, err)
+		}
+
+		summary, err = ParseSummaryResponse(resp.Content)
+		if err != nil {
+			return fmt.Errorf("parse type summary for %s: %w", id, err)
+		}
+		p.typeSummaries[id] = summary
+
+		if p.config.Cache.Enabled && p.cache != nil {
+			if data, err := json.Marshal(summary); err == nil {
+				p.cache.Set(cacheKey, data)
+			}
+		}
+	}
+	return nil
+}
+
+// GetTypeSummary returns the summary for a type, or nil if none.
+func (p *Pipeline) GetTypeSummary(typeID string) *SummaryResponse {
+	return p.typeSummaries[typeID]
+}
+
+func (p *Pipeline) buildTypePromptContext(ti *extract.TypeInfo) TypePromptContext {
+	lang := p.language
+	if lang == "" {
+		lang = "Go"
+	}
+	methods := make([]ReceiverMethodContext, 0, len(ti.Methods))
+	for _, mID := range ti.Methods {
+		fn, ok := p.funcs[mID]
+		if !ok {
+			continue
+		}
+		sig, doc := cleanMethodDisplay(fn.Signature, fn.Godoc)
+		methods = append(methods, ReceiverMethodContext{
+			Name:      fn.Name,
+			Signature: sig,
+			Godoc:     doc,
+		})
+	}
+	sig, godoc := cleanTypeDisplay(ti.Signature, ti.Godoc)
+	return TypePromptContext{
+		Language:  lang,
+		Kind:      ti.Kind,
+		Name:      ti.Name,
+		Package:   ti.Package,
+		Signature: sig,
+		Body:      ti.Body,
+		Godoc:     godoc,
+		Methods:   methods,
+	}
+}
+
+func (p *Pipeline) typeCacheKey(ti *extract.TypeInfo) string {
+	parts := []string{ti.Body, ti.Godoc}
+	for _, mID := range ti.Methods {
+		if fn, ok := p.funcs[mID]; ok {
+			parts = append(parts, fn.Signature)
+		}
+	}
+	return cache.ContentHash(parts...)
 }
 
 // Analyze runs all analysis passes on a single unit
@@ -266,6 +424,14 @@ func (p *Pipeline) BuildPromptContext(unit *extract.AnalysisUnit, calleeSummarie
 		}
 	}
 
+	// Receiver type context: when every function in the unit shares the
+	// same receiver type (typical: a single method, or a rare SCC of
+	// mutually-recursive methods on the same type), render the type's
+	// declaration, LLM summary, and sibling method signatures.
+	if rt := p.buildReceiverTypeContext(unit); rt != nil {
+		ctx.ReceiverType = rt
+	}
+
 	// Add callee summaries for internal callees
 	for _, calleeID := range unit.Callees {
 		if summary, ok := calleeSummaries[calleeID]; ok {
@@ -292,6 +458,133 @@ func (p *Pipeline) BuildPromptContext(unit *extract.AnalysisUnit, calleeSummarie
 	}
 
 	return ctx
+}
+
+func (p *Pipeline) buildReceiverTypeContext(unit *extract.AnalysisUnit) *ReceiverTypeContext {
+	if len(unit.Functions) == 0 || len(p.types) == 0 {
+		return nil
+	}
+	typeID := unit.Functions[0].ReceiverType
+	if typeID == "" {
+		return nil
+	}
+	for _, fn := range unit.Functions[1:] {
+		if fn.ReceiverType != typeID {
+			return nil
+		}
+	}
+	ti, ok := p.types[typeID]
+	if !ok {
+		return nil
+	}
+
+	sig, godoc := cleanTypeDisplay(ti.Signature, ti.Godoc)
+	rt := &ReceiverTypeContext{
+		Name:      ti.Name,
+		Kind:      ti.Kind,
+		Signature: sig,
+		Body:      ti.Body,
+		Godoc:     godoc,
+	}
+	if s := p.typeSummaries[typeID]; s != nil {
+		rt.Purpose = s.Purpose
+		rt.Behavior = s.Behavior
+		rt.Invariants = s.Invariants
+		rt.Security = s.Security
+	}
+
+	currentIDs := make(map[string]bool, len(unit.Functions))
+	for _, fn := range unit.Functions {
+		currentIDs[fn.ID()] = true
+	}
+	for _, mID := range ti.Methods {
+		if currentIDs[mID] {
+			continue
+		}
+		fn, ok := p.funcs[mID]
+		if !ok {
+			continue
+		}
+		sig, doc := cleanMethodDisplay(fn.Signature, fn.Godoc)
+		rt.Methods = append(rt.Methods, ReceiverMethodContext{
+			Name:      fn.Name,
+			Signature: sig,
+			Godoc:     doc,
+		})
+	}
+	return rt
+}
+
+// cleanMethodDisplay prepares a SCIP-flavored (Signature, Godoc) pair
+// for rendering as a single bullet point. Falls back to the first
+// code-fence line of Godoc when Signature is empty (scip-typescript
+// leaves SignatureDocumentation empty and puts the signature inside a
+// ```ts fence in Documentation), strips that block from Godoc to avoid
+// duplicate text, and collapses the remaining Godoc to one line.
+func cleanMethodDisplay(signature, godoc string) (string, string) {
+	sig, doc := splitSignatureFromGodoc(signature, godoc)
+	return sig, collapseToLine(doc)
+}
+
+// cleanTypeDisplay is like cleanMethodDisplay but preserves multi-line
+// Godoc — types often have several sentences of prose worth showing in
+// full.
+func cleanTypeDisplay(signature, godoc string) (string, string) {
+	return splitSignatureFromGodoc(signature, godoc)
+}
+
+// splitSignatureFromGodoc falls back to the first ``` fence block when
+// Signature is empty. Returns trimmed (signature, godoc-without-fence).
+func splitSignatureFromGodoc(signature, godoc string) (string, string) {
+	sig := strings.TrimSpace(signature)
+	doc := strings.TrimSpace(godoc)
+	if sig == "" {
+		if s, rest, ok := extractFirstFencedLine(doc); ok {
+			sig = s
+			doc = rest
+		}
+	}
+	return sig, doc
+}
+
+// extractFirstFencedLine pulls the first content line out of the first
+// triple-backtick fence in s. Returns (line, remainder, true) on
+// success; the remainder is s with the fence removed.
+func extractFirstFencedLine(s string) (string, string, bool) {
+	lines := strings.Split(s, "\n")
+	start := -1
+	for i, line := range lines {
+		if strings.HasPrefix(strings.TrimSpace(line), "```") {
+			start = i
+			break
+		}
+	}
+	if start < 0 {
+		return "", s, false
+	}
+	end := -1
+	for i := start + 1; i < len(lines); i++ {
+		if strings.HasPrefix(strings.TrimSpace(lines[i]), "```") {
+			end = i
+			break
+		}
+	}
+	if end < 0 || end == start+1 {
+		return "", s, false
+	}
+	firstLine := strings.TrimSpace(lines[start+1])
+	if firstLine == "" {
+		return "", s, false
+	}
+	remainder := append([]string(nil), lines[:start]...)
+	remainder = append(remainder, lines[end+1:]...)
+	return firstLine, strings.TrimSpace(strings.Join(remainder, "\n")), true
+}
+
+// collapseToLine joins whitespace-separated runs of godoc text into a
+// single line so it fits in a bullet point.
+func collapseToLine(s string) string {
+	return strings.Join(strings.Fields(s), " ")
 }
 
 func (p *Pipeline) runSummaryPass(ctx context.Context, promptCtx PromptContext) (*SummaryResponse, error) {
@@ -367,6 +660,12 @@ func (p *Pipeline) cacheKey(unit *extract.AnalysisUnit, calleeSummaries map[stri
 	parts := []string{}
 	for _, fn := range unit.Functions {
 		parts = append(parts, fn.Body)
+		if fn.ReceiverType != "" {
+			if s := p.typeSummaries[fn.ReceiverType]; s != nil {
+				data, _ := json.Marshal(s)
+				parts = append(parts, string(data))
+			}
+		}
 	}
 	for _, calleeID := range unit.Callees {
 		if summary, ok := calleeSummaries[calleeID]; ok {
