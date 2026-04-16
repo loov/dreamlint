@@ -19,7 +19,7 @@ type FunctionInfo struct {
 	ReceiverType string
 	Signature    string
 	Body         string
-	Godoc        string
+	Doc          string
 	Position     token.Position
 }
 
@@ -44,7 +44,7 @@ type TypeInfo struct {
 	Kind      string // "class" | "struct" | "interface" | "trait" | "enum" | "type"
 	Signature string
 	Body      string
-	Godoc     string
+	Doc       string
 	Position  token.Position
 	Methods   []string
 }
@@ -55,5 +55,5 @@ type ExternalFunc struct {
 	Package   string
 	Name      string
 	Signature string
-	Godoc     string
+	Doc       string
 }

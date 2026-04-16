@@ -61,8 +61,8 @@ func helper() {}
 		t.Error("Hello signature is empty")
 	}
 
-	if hello.Godoc == "" {
-		t.Error("Hello godoc is empty")
+	if hello.Doc == "" {
+		t.Error("Hello doc is empty")
 	}
 }
 
@@ -121,8 +121,8 @@ func free() {}
 	if counter.Kind != "struct" {
 		t.Errorf("Counter.Kind = %q, want struct", counter.Kind)
 	}
-	if counter.Godoc == "" {
-		t.Errorf("Counter.Godoc is empty")
+	if counter.Doc == "" {
+		t.Errorf("Counter.Doc is empty")
 	}
 	wantMethods := map[string]bool{
 		"testpkg.(*Counter).Bump": true,

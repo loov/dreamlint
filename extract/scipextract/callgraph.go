@@ -202,7 +202,7 @@ func buildExternalFunc(symbol string, index *scip.Index) *extract.ExternalFunc {
 		if info.SignatureDocumentation != nil {
 			ext.Signature = info.SignatureDocumentation.Text
 		}
-		ext.Godoc = strings.Join(info.Documentation, "\n\n")
+		ext.Doc = strings.Join(info.Documentation, "\n\n")
 	}
 
 	return ext

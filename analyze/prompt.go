@@ -22,7 +22,7 @@ type PromptContext struct {
 	Receiver  string
 	Signature string
 	Body      string
-	Godoc     string
+	Doc       string
 
 	// For SCCs with multiple functions
 	Functions []FunctionContext
@@ -49,7 +49,7 @@ type ReceiverTypeContext struct {
 	Kind       string
 	Signature  string
 	Body       string
-	Godoc      string
+	Doc        string
 	Methods    []ReceiverMethodContext
 	Purpose    string
 	Behavior   string
@@ -62,7 +62,7 @@ type ReceiverTypeContext struct {
 type ReceiverMethodContext struct {
 	Name      string
 	Signature string
-	Godoc     string
+	Doc       string
 }
 
 // TypePromptContext is the data shape for the type_summary prompt.
@@ -73,7 +73,7 @@ type TypePromptContext struct {
 	Package   string
 	Signature string
 	Body      string
-	Godoc     string
+	Doc       string
 	Methods   []ReceiverMethodContext
 }
 
@@ -83,7 +83,7 @@ type FunctionContext struct {
 	Receiver  string
 	Signature string
 	Body      string
-	Godoc     string
+	Doc       string
 }
 
 // CalleeSummary holds a callee's summary for context
@@ -100,7 +100,7 @@ type ExternalFuncContext struct {
 	Package    string
 	Name       string
 	Signature  string
-	Godoc      string
+	Doc        string
 	Invariants []string
 	Pitfalls   []string
 }

@@ -104,10 +104,10 @@ func extractExternalFunc(id string, allPkgs map[string]*packages.Package) *extra
 	// Look up the function in the package's type info
 	if recv != "" {
 		// Method lookup
-		ext.Signature, ext.Godoc = lookupMethod(pkg, recv, name)
+		ext.Signature, ext.Doc = lookupMethod(pkg, recv, name)
 	} else {
 		// Function lookup
-		ext.Signature, ext.Godoc = lookupFunc(pkg, name)
+		ext.Signature, ext.Doc = lookupFunc(pkg, name)
 	}
 
 	if ext.Signature == "" {

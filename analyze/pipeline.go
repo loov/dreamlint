@@ -239,14 +239,14 @@ func (p *Pipeline) buildTypePromptContext(ti *extract.TypeInfo) TypePromptContex
 		if !ok {
 			continue
 		}
-		sig, doc := cleanMethodDisplay(fn.Signature, fn.Godoc)
+		sig, doc := cleanMethodDisplay(fn.Signature, fn.Doc)
 		methods = append(methods, ReceiverMethodContext{
 			Name:      fn.Name,
 			Signature: sig,
-			Godoc:     doc,
+			Doc:       doc,
 		})
 	}
-	sig, godoc := cleanTypeDisplay(ti.Signature, ti.Godoc)
+	sig, doc := cleanTypeDisplay(ti.Signature, ti.Doc)
 	return TypePromptContext{
 		Language:  lang,
 		Kind:      ti.Kind,
@@ -254,13 +254,13 @@ func (p *Pipeline) buildTypePromptContext(ti *extract.TypeInfo) TypePromptContex
 		Package:   ti.Package,
 		Signature: sig,
 		Body:      ti.Body,
-		Godoc:     godoc,
+		Doc:       doc,
 		Methods:   methods,
 	}
 }
 
 func (p *Pipeline) typeCacheKey(ti *extract.TypeInfo) string {
-	parts := []string{ti.Body, ti.Godoc}
+	parts := []string{ti.Body, ti.Doc}
 	for _, mID := range ti.Methods {
 		if fn, ok := p.funcs[mID]; ok {
 			parts = append(parts, fn.Signature)
@@ -410,7 +410,7 @@ func (p *Pipeline) BuildPromptContext(unit *extract.AnalysisUnit, calleeSummarie
 		ctx.Receiver = fn.Receiver
 		ctx.Signature = fn.Signature
 		ctx.Body = fn.Body
-		ctx.Godoc = fn.Godoc
+		ctx.Doc = fn.Doc
 	} else {
 		// SCC with multiple functions
 		for _, fn := range unit.Functions {
@@ -419,7 +419,7 @@ func (p *Pipeline) BuildPromptContext(unit *extract.AnalysisUnit, calleeSummarie
 				Receiver:  fn.Receiver,
 				Signature: fn.Signature,
 				Body:      fn.Body,
-				Godoc:     fn.Godoc,
+				Doc:       fn.Doc,
 			})
 		}
 	}
@@ -452,7 +452,7 @@ func (p *Pipeline) BuildPromptContext(unit *extract.AnalysisUnit, calleeSummarie
 				Package:   ext.Package,
 				Name:      ext.Name,
 				Signature: ext.Signature,
-				Godoc:     ext.Godoc,
+				Doc:       ext.Doc,
 			})
 		}
 	}
@@ -478,13 +478,13 @@ func (p *Pipeline) buildReceiverTypeContext(unit *extract.AnalysisUnit) *Receive
 		return nil
 	}
 
-	sig, godoc := cleanTypeDisplay(ti.Signature, ti.Godoc)
+	sig, doc := cleanTypeDisplay(ti.Signature, ti.Doc)
 	rt := &ReceiverTypeContext{
 		Name:      ti.Name,
 		Kind:      ti.Kind,
 		Signature: sig,
 		Body:      ti.Body,
-		Godoc:     godoc,
+		Doc:       doc,
 	}
 	if s := p.typeSummaries[typeID]; s != nil {
 		rt.Purpose = s.Purpose
@@ -505,46 +505,46 @@ func (p *Pipeline) buildReceiverTypeContext(unit *extract.AnalysisUnit) *Receive
 		if !ok {
 			continue
 		}
-		sig, doc := cleanMethodDisplay(fn.Signature, fn.Godoc)
+		sig, doc := cleanMethodDisplay(fn.Signature, fn.Doc)
 		rt.Methods = append(rt.Methods, ReceiverMethodContext{
 			Name:      fn.Name,
 			Signature: sig,
-			Godoc:     doc,
+			Doc:       doc,
 		})
 	}
 	return rt
 }
 
-// cleanMethodDisplay prepares a SCIP-flavored (Signature, Godoc) pair
+// cleanMethodDisplay prepares a SCIP-flavored (Signature, Doc) pair
 // for rendering as a single bullet point. Falls back to the first
-// code-fence line of Godoc when Signature is empty (scip-typescript
+// code-fence line of Doc when Signature is empty (scip-typescript
 // leaves SignatureDocumentation empty and puts the signature inside a
-// ```ts fence in Documentation), strips that block from Godoc to avoid
-// duplicate text, and collapses the remaining Godoc to one line.
-func cleanMethodDisplay(signature, godoc string) (string, string) {
-	sig, doc := splitSignatureFromGodoc(signature, godoc)
-	return sig, collapseToLine(doc)
+// ```ts fence in Documentation), strips that block from Doc to avoid
+// duplicate text, and collapses the remaining Doc to one line.
+func cleanMethodDisplay(signature, doc string) (string, string) {
+	sig, body := splitSignatureFromDoc(signature, doc)
+	return sig, collapseToLine(body)
 }
 
 // cleanTypeDisplay is like cleanMethodDisplay but preserves multi-line
-// Godoc — types often have several sentences of prose worth showing in
+// Doc — types often have several sentences of prose worth showing in
 // full.
-func cleanTypeDisplay(signature, godoc string) (string, string) {
-	return splitSignatureFromGodoc(signature, godoc)
+func cleanTypeDisplay(signature, doc string) (string, string) {
+	return splitSignatureFromDoc(signature, doc)
 }
 
-// splitSignatureFromGodoc falls back to the first ``` fence block when
-// Signature is empty. Returns trimmed (signature, godoc-without-fence).
-func splitSignatureFromGodoc(signature, godoc string) (string, string) {
+// splitSignatureFromDoc falls back to the first ``` fence block when
+// Signature is empty. Returns trimmed (signature, doc-without-fence).
+func splitSignatureFromDoc(signature, doc string) (string, string) {
 	sig := strings.TrimSpace(signature)
-	doc := strings.TrimSpace(godoc)
+	body := strings.TrimSpace(doc)
 	if sig == "" {
-		if s, rest, ok := extractFirstFencedLine(doc); ok {
+		if s, rest, ok := extractFirstFencedLine(body); ok {
 			sig = s
-			doc = rest
+			body = rest
 		}
 	}
-	return sig, doc
+	return sig, body
 }
 
 // extractFirstFencedLine pulls the first content line out of the first
@@ -581,7 +581,7 @@ func extractFirstFencedLine(s string) (string, string, bool) {
 	return firstLine, strings.TrimSpace(strings.Join(remainder, "\n")), true
 }
 
-// collapseToLine joins whitespace-separated runs of godoc text into a
+// collapseToLine joins whitespace-separated runs of doc text into a
 // single line so it fits in a bullet point.
 func collapseToLine(s string) string {
 	return strings.Join(strings.Fields(s), " ")

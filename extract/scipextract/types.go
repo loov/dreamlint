@@ -72,7 +72,7 @@ func kindString(kind scip.SymbolInformation_Kind) string {
 // buildTypeInfo constructs an extract.TypeInfo from a type-like
 // SymbolInformation. Returns nil if the symbol can't be parsed or
 // describes a rust-analyzer-style synthetic "impl" wrapper (these
-// carry the impl'd type's signature/godoc but are keyed by the
+// carry the impl'd type's signature/doc but are keyed by the
 // trait name, which would collide with the real type entry).
 func buildTypeInfo(info *scip.SymbolInformation, doc *scip.Document, absPath string) *extract.TypeInfo {
 	sym, err := scip.ParseSymbol(info.Symbol)
@@ -109,7 +109,7 @@ func buildTypeInfo(info *scip.SymbolInformation, doc *scip.Document, absPath str
 		Name:      name,
 		Kind:      kindString(info.Kind),
 		Signature: sig,
-		Godoc:     strings.Join(info.Documentation, "\n\n"),
+		Doc:       strings.Join(info.Documentation, "\n\n"),
 		Position:  pos,
 	}
 }

@@ -78,7 +78,7 @@ func buildFunctionInfo(info *scip.SymbolInformation, doc *scip.Document, absPath
 		Name:      name,
 		Receiver:  receiver,
 		Signature: sig,
-		Godoc:     strings.Join(info.Documentation, "\n\n"),
+		Doc:       strings.Join(info.Documentation, "\n\n"),
 		Position:  pos,
 	}
 }

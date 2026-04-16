@@ -106,8 +106,8 @@ func TestBuildFunctionInfo(t *testing.T) {
 	if fn.Signature != "fn baz(self) -> u32" {
 		t.Errorf("Signature = %q, want fn baz(self) -> u32", fn.Signature)
 	}
-	if fn.Godoc != "baz adds spice." {
-		t.Errorf("Godoc = %q, want baz adds spice.", fn.Godoc)
+	if fn.Doc != "baz adds spice." {
+		t.Errorf("Doc = %q, want baz adds spice.", fn.Doc)
 	}
 	if fn.Position.Filename != "/repo/src/lib.rs" {
 		t.Errorf("Position.Filename = %q, want /repo/src/lib.rs", fn.Position.Filename)

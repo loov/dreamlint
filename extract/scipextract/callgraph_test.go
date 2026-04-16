@@ -120,7 +120,7 @@ func TestBuildCallgraph_ExternalRef(t *testing.T) {
 	if ext.Signature != "fn println(s: &str)" {
 		t.Errorf("ExternalFunc.Signature = %q", ext.Signature)
 	}
-	if ext.Godoc != "Prints to stdout." {
-		t.Errorf("ExternalFunc.Godoc = %q", ext.Godoc)
+	if ext.Doc != "Prints to stdout." {
+		t.Errorf("ExternalFunc.Doc = %q", ext.Doc)
 	}
 }

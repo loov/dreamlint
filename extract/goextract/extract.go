@@ -84,9 +84,9 @@ func ExtractTypesFromPackages(pkgs []*packages.Package) []*extract.TypeInfo {
 					}
 
 					if ts.Doc != nil {
-						ti.Godoc = ts.Doc.Text()
+						ti.Doc = ts.Doc.Text()
 					} else if len(gen.Specs) == 1 && gen.Doc != nil {
-						ti.Godoc = gen.Doc.Text()
+						ti.Doc = gen.Doc.Text()
 					}
 
 					types = append(types, ti)
@@ -234,9 +234,8 @@ func ExtractFunctionsFromPackages(pkgs []*packages.Package) []*extract.FunctionI
 					info.Body = buf.String()
 				}
 
-				// Extract godoc
 				if fn.Doc != nil {
-					info.Godoc = fn.Doc.Text()
+					info.Doc = fn.Doc.Text()
 				}
 
 				funcs = append(funcs, info)

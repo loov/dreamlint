@@ -3,15 +3,15 @@ You are analyzing a {{.Language}} {{.Kind}} named {{.Name}} to summarize what it
 ```
 {{.Body}}
 ```
-{{- if .Godoc}}
+{{- if .Doc}}
 
-Documentation: {{.Godoc}}
+Documentation: {{.Doc}}
 {{- end}}
 {{- if .Methods}}
 
 Methods:
 {{- range .Methods}}
-- {{if .Signature}}`{{.Signature}}`{{end}}{{if and .Signature .Godoc}} — {{end}}{{.Godoc}}
+- {{if .Signature}}`{{.Signature}}`{{end}}{{if and .Signature .Doc}} — {{end}}{{.Doc}}
 {{- end}}
 {{- end}}
 

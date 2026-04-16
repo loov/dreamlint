@@ -133,8 +133,8 @@ func TestBuildTypeInfo(t *testing.T) {
 	if ti.Signature != "pub struct Counter" {
 		t.Errorf("Signature = %q, want pub struct Counter", ti.Signature)
 	}
-	if ti.Godoc != "A running counter." {
-		t.Errorf("Godoc = %q, want 'A running counter.'", ti.Godoc)
+	if ti.Doc != "A running counter." {
+		t.Errorf("Doc = %q, want 'A running counter.'", ti.Doc)
 	}
 	if ti.Position.Filename != "/repo/src/lib.rs" {
 		t.Errorf("Position.Filename = %q", ti.Position.Filename)
@@ -147,7 +147,7 @@ func TestBuildTypeInfo(t *testing.T) {
 func TestBuildTypeInfo_RejectsRustImplWrapper(t *testing.T) {
 	// rust-analyzer emits an impl block as a synthetic TypeAlias whose
 	// descriptor chain starts with Type "impl". These carry the impl'd
-	// type's signature/godoc and would collide with the real type entry.
+	// type's signature/doc and would collide with the real type entry.
 	info := &scip.SymbolInformation{
 		Symbol:        "rust-analyzer cargo example 0.1.0 impl#[Counter][Default]",
 		Kind:          scip.SymbolInformation_TypeAlias,
