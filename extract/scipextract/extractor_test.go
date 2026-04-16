@@ -217,3 +217,21 @@ type extractFunctionInfoView struct {
 	Receiver     string
 	ReceiverType string
 }
+
+func TestStripFileURI(t *testing.T) {
+	cases := map[string]string{
+		"":                                "",
+		"/plain/path":                     "/plain/path",
+		"file:///home/user/project":      "/home/user/project",
+		"file:///C:/src/project":         "C:/src/project",
+		"file:///c:/src/project":         "c:/src/project",
+		"file://C:/src/project":          "C:/src/project",
+		"file:///Z:/with/space dir":      "Z:/with/space dir",
+		"file://host/share/path":         "host/share/path",
+	}
+	for in, want := range cases {
+		if got := stripFileURI(in); got != want {
+			t.Errorf("stripFileURI(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
