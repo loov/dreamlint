@@ -115,6 +115,7 @@ func runPipelineGoldenTest(t *testing.T, txtarFile string) {
 
 	// Create and run pipeline
 	pipeline := analyze.NewPipeline(cfg, nil, mockClient, externalFuncs, typesByID, funcByID)
+	pipeline.SetLanguage("Go")
 	if err := pipeline.LoadPrompts(); err != nil {
 		t.Fatalf("load prompts: %v", err)
 	}
