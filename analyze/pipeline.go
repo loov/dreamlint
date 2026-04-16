@@ -50,7 +50,7 @@ type Pipeline struct {
 }
 
 // SetLanguage sets the source language used when rendering prompts.
-// When unset, prompts default to "Go".
+// When unset, prompts use a neutral "source" placeholder.
 func (p *Pipeline) SetLanguage(lang string) {
 	p.language = lang
 }
@@ -231,7 +231,7 @@ func (p *Pipeline) GetTypeSummary(typeID string) *SummaryResponse {
 func (p *Pipeline) buildTypePromptContext(ti *extract.TypeInfo) TypePromptContext {
 	lang := p.language
 	if lang == "" {
-		lang = "Go"
+		lang = "source"
 	}
 	methods := make([]ReceiverMethodContext, 0, len(ti.Methods))
 	for _, mID := range ti.Methods {
@@ -399,7 +399,7 @@ func (p *Pipeline) Analyze(ctx context.Context, unit *extract.AnalysisUnit, call
 func (p *Pipeline) BuildPromptContext(unit *extract.AnalysisUnit, calleeSummaries map[string]*SummaryResponse) PromptContext {
 	lang := p.language
 	if lang == "" {
-		lang = "Go"
+		lang = "source"
 	}
 	ctx := PromptContext{Language: lang}
 
