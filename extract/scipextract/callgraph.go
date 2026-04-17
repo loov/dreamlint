@@ -31,6 +31,7 @@ func buildCallgraph(
 		}
 	}
 
+	extSymIndex := buildExternalSymbolIndex(index)
 	calleeSeen := make(map[string]map[string]bool, len(symbolToID))
 	externalSeen := make(map[string]bool)
 	external := make(map[string]*extract.ExternalFunc)
@@ -82,7 +83,7 @@ func buildCallgraph(
 				// External reference.
 				extID := externalID(occ.Symbol)
 				if !externalSeen[extID] {
-					ext := buildExternalFunc(occ.Symbol, index)
+					ext := buildExternalFunc(occ.Symbol, extSymIndex)
 					if ext == nil {
 						continue
 					}
@@ -176,20 +177,34 @@ func externalID(symbol string) string {
 	return "scip:" + symbol
 }
 
+// buildExternalSymbolIndex builds a map from symbol string to
+// SymbolInformation for all external symbols in the index. Called
+// once per extraction so lookups during callgraph construction are O(1).
+func buildExternalSymbolIndex(index *scip.Index) map[string]*scip.SymbolInformation {
+	if index == nil {
+		return nil
+	}
+	m := make(map[string]*scip.SymbolInformation, len(index.ExternalSymbols))
+	for _, info := range index.ExternalSymbols {
+		m[info.Symbol] = info
+	}
+	return m
+}
+
 // buildExternalFunc returns a shallow ExternalFunc for a reference to
-// symbol. Metadata is pulled from index.ExternalSymbols when available;
+// symbol. Metadata is pulled from extSymIndex when available;
 // otherwise we synthesize it from the parsed descriptors.
 //
 // Filtering mirrors isFunctionSymbol: when the index carries
 // SymbolInformation for this external, the full Kind+descriptor check
 // is applied; otherwise we fall back to the descriptor suffix alone.
-func buildExternalFunc(symbol string, index *scip.Index) *extract.ExternalFunc {
+func buildExternalFunc(symbol string, extSymIndex map[string]*scip.SymbolInformation) *extract.ExternalFunc {
 	sym, err := scip.ParseSymbol(symbol)
 	if err != nil || len(sym.Descriptors) == 0 {
 		return nil
 	}
 
-	info := findExternalSymbolInfo(symbol, index)
+	info := extSymIndex[symbol]
 	if info != nil {
 		if !isFunctionSymbol(info) {
 			return nil
@@ -215,18 +230,4 @@ func buildExternalFunc(symbol string, index *scip.Index) *extract.ExternalFunc {
 	}
 
 	return ext
-}
-
-// findExternalSymbolInfo returns the SymbolInformation for symbol in
-// index.ExternalSymbols, or nil if absent.
-func findExternalSymbolInfo(symbol string, index *scip.Index) *scip.SymbolInformation {
-	if index == nil {
-		return nil
-	}
-	for _, info := range index.ExternalSymbols {
-		if info.Symbol == symbol {
-			return info
-		}
-	}
-	return nil
 }

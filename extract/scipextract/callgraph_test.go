@@ -140,23 +140,23 @@ func TestBuildExternalFunc_FilterAlignment(t *testing.T) {
 	// semantics; previously rejected by descriptor-only filter).
 	ctorSym := "rust-analyzer cargo std 1.0.0 Vec#"
 
-	index := &scip.Index{
+	extIdx := buildExternalSymbolIndex(&scip.Index{
 		ExternalSymbols: []*scip.SymbolInformation{
 			{Symbol: funSym, Kind: scip.SymbolInformation_Function, DisplayName: "println"},
 			{Symbol: ctorSym, Kind: scip.SymbolInformation_Constructor, DisplayName: "Vec"},
 		},
-	}
+	})
 
-	if got := buildExternalFunc(funSym, index); got == nil {
+	if got := buildExternalFunc(funSym, extIdx); got == nil {
 		t.Errorf("callable Kind + callable descriptor: got nil, want ExternalFunc")
 	}
-	if got := buildExternalFunc(termSym, index); got != nil {
+	if got := buildExternalFunc(termSym, extIdx); got != nil {
 		t.Errorf("non-callable descriptor, no info: got %+v, want nil", got)
 	}
-	if got := buildExternalFunc(descOnlySym, index); got == nil {
+	if got := buildExternalFunc(descOnlySym, extIdx); got == nil {
 		t.Errorf("callable descriptor, no info: got nil, want ExternalFunc")
 	}
-	if got := buildExternalFunc(ctorSym, index); got == nil {
+	if got := buildExternalFunc(ctorSym, extIdx); got == nil {
 		t.Errorf("Kind=Constructor in external info: got nil, want ExternalFunc")
 	}
 }
