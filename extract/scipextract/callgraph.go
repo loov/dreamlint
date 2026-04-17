@@ -2,7 +2,6 @@ package scipextract
 
 import (
 	"math"
-	"slices"
 	"sort"
 	"strings"
 
@@ -32,8 +31,22 @@ func buildCallgraph(
 		}
 	}
 
+	calleeSeen := make(map[string]map[string]bool, len(symbolToID))
 	externalSeen := make(map[string]bool)
 	external := make(map[string]*extract.ExternalFunc)
+
+	addEdge := func(callerID, calleeID string) {
+		s := calleeSeen[callerID]
+		if s == nil {
+			s = make(map[string]bool)
+			calleeSeen[callerID] = s
+		}
+		if s[calleeID] {
+			return
+		}
+		s[calleeID] = true
+		graph[callerID] = append(graph[callerID], calleeID)
+	}
 
 	for _, doc := range docs {
 		defRanges := docRanges[doc]
@@ -61,29 +74,22 @@ func buildCallgraph(
 					continue
 				}
 				if calleeID, ok := symbolToID[occ.Symbol]; ok {
-					if calleeID == callerID {
-						continue
-					}
-					if !slices.Contains(graph[callerID], calleeID) {
-						graph[callerID] = append(graph[callerID], calleeID)
+					if calleeID != callerID {
+						addEdge(callerID, calleeID)
 					}
 					continue
 				}
 				// External reference.
 				extID := externalID(occ.Symbol)
-				if externalSeen[extID] {
-					if !slices.Contains(graph[callerID], extID) {
-						graph[callerID] = append(graph[callerID], extID)
+				if !externalSeen[extID] {
+					ext := buildExternalFunc(occ.Symbol, index)
+					if ext == nil {
+						continue
 					}
-					continue
-				}
-				if ext := buildExternalFunc(occ.Symbol, index); ext != nil {
 					external[extID] = ext
 					externalSeen[extID] = true
-					if !slices.Contains(graph[callerID], extID) {
-						graph[callerID] = append(graph[callerID], extID)
-					}
 				}
+				addEdge(callerID, extID)
 			}
 		}
 	}
