@@ -329,3 +329,107 @@ func TestStripFileURI(t *testing.T) {
 		}
 	}
 }
+
+func writeIndex(t *testing.T, dir string, index *scip.Index) string {
+	t.Helper()
+	data, err := proto.Marshal(index)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := filepath.Join(dir, "index.scip")
+	if err := os.WriteFile(p, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return p
+}
+
+func TestExtract_EmptyIndex(t *testing.T) {
+	dir := t.TempDir()
+	p := writeIndex(t, dir, &scip.Index{})
+	ex := &Extractor{IndexPath: p, ProjectRoot: dir}
+	res, err := ex.Extract(context.Background())
+	if err != nil {
+		t.Fatalf("Extract: %v", err)
+	}
+	if len(res.Units) != 0 {
+		t.Errorf("got %d units, want 0", len(res.Units))
+	}
+}
+
+func TestExtract_DocumentWithNoSymbols(t *testing.T) {
+	dir := t.TempDir()
+	p := writeIndex(t, dir, &scip.Index{
+		Metadata: &scip.Metadata{ProjectRoot: "file://" + dir},
+		Documents: []*scip.Document{
+			{Language: "Rust", RelativePath: "src/lib.rs"},
+		},
+	})
+	ex := &Extractor{IndexPath: p}
+	res, err := ex.Extract(context.Background())
+	if err != nil {
+		t.Fatalf("Extract: %v", err)
+	}
+	if len(res.Units) != 0 {
+		t.Errorf("got %d units, want 0", len(res.Units))
+	}
+}
+
+func TestExtract_UnparseableSymbol(t *testing.T) {
+	dir := t.TempDir()
+	p := writeIndex(t, dir, &scip.Index{
+		Metadata: &scip.Metadata{ProjectRoot: "file://" + dir},
+		Documents: []*scip.Document{{
+			Language:     "Rust",
+			RelativePath: "src/lib.rs",
+			Symbols: []*scip.SymbolInformation{
+				{Symbol: "not a valid scip symbol!!!", Kind: scip.SymbolInformation_Function},
+			},
+		}},
+	})
+	ex := &Extractor{IndexPath: p}
+	res, err := ex.Extract(context.Background())
+	if err != nil {
+		t.Fatalf("Extract: %v", err)
+	}
+	if len(res.Units) != 0 {
+		t.Errorf("got %d units, want 0", len(res.Units))
+	}
+}
+
+func TestExtract_ShortRangeArray(t *testing.T) {
+	dir := t.TempDir()
+	abs := filepath.Join(dir, "src/lib.rs")
+	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(abs, []byte("fn f() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	p := writeIndex(t, dir, &scip.Index{
+		Metadata: &scip.Metadata{ProjectRoot: "file://" + dir},
+		Documents: []*scip.Document{{
+			Language:     "Rust",
+			RelativePath: "src/lib.rs",
+			Symbols: []*scip.SymbolInformation{
+				{
+					Symbol:      "rust-analyzer cargo x 0.1.0 f().",
+					Kind:        scip.SymbolInformation_Function,
+					DisplayName: "f",
+				},
+			},
+			Occurrences: []*scip.Occurrence{
+				{
+					Symbol:      "rust-analyzer cargo x 0.1.0 f().",
+					Range:       []int32{}, // empty Range array
+					SymbolRoles: int32(scip.SymbolRole_Definition),
+				},
+			},
+		}},
+	})
+	ex := &Extractor{IndexPath: p}
+	res, err := ex.Extract(context.Background())
+	if err != nil {
+		t.Fatalf("Extract should not panic: %v", err)
+	}
+	_ = res
+}
