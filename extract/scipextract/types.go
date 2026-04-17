@@ -1,7 +1,6 @@
 package scipextract
 
 import (
-	"math"
 	"sort"
 	"strings"
 
@@ -9,6 +8,8 @@ import (
 
 	"github.com/loov/dreamlint/extract"
 )
+
+const maxTypeBodyLines = 200
 
 // isTypeSymbol reports whether a SymbolInformation describes a
 // user-defined type (class, struct, interface, trait, enum, type alias).
@@ -170,7 +171,7 @@ func typeDefinitionRanges(doc *scip.Document, typeSymbols map[string]bool) map[s
 			if i+1 < len(entries) {
 				e.r.End = scip.Position{Line: entries[i+1].r.Start.Line}
 			} else {
-				e.r.End = scip.Position{Line: math.MaxInt32}
+				e.r.End = scip.Position{Line: e.r.Start.Line + maxTypeBodyLines}
 			}
 		}
 		out[e.sym] = e.r
