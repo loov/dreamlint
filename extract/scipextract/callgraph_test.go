@@ -160,3 +160,46 @@ func TestBuildExternalFunc_FilterAlignment(t *testing.T) {
 		t.Errorf("Kind=Constructor in external info: got nil, want ExternalFunc")
 	}
 }
+
+// TestDefinitionRanges_NestedTruncation pins the known limitation: when
+// EnclosingRange is absent, the outer function's range is truncated at
+// the start of the nested function.
+func TestDefinitionRanges_NestedTruncation(t *testing.T) {
+	outerSym := "scip-clang pkg x 0.1.0 outer()."
+	innerSym := "scip-clang pkg x 0.1.0 inner()."
+
+	doc := &scip.Document{
+		RelativePath: "src/main.cpp",
+		Occurrences: []*scip.Occurrence{
+			// outer defined at line 0, no EnclosingRange
+			{
+				Symbol:      outerSym,
+				Range:       []int32{0, 5, 0, 10},
+				SymbolRoles: int32(scip.SymbolRole_Definition),
+			},
+			// inner defined at line 5 (nested), no EnclosingRange
+			{
+				Symbol:      innerSym,
+				Range:       []int32{5, 5, 5, 10},
+				SymbolRoles: int32(scip.SymbolRole_Definition),
+			},
+		},
+	}
+
+	symToID := map[string]string{
+		outerSym: "x.outer",
+		innerSym: "x.inner",
+	}
+
+	ranges := definitionRanges(doc, symToID)
+
+	outerR := ranges[outerSym]
+	if int(outerR.End.Line) != 5 {
+		t.Errorf("outer End.Line = %d, want 5 (truncated at inner's start)", outerR.End.Line)
+	}
+
+	innerR := ranges[innerSym]
+	if int(innerR.Start.Line) != 5 {
+		t.Errorf("inner Start.Line = %d, want 5", innerR.Start.Line)
+	}
+}

@@ -105,8 +105,16 @@ func buildCallgraph(
 // scip-clang) don't emit EnclosingRange, in which case we fall back to a
 // "span to next function" heuristic: the definition range of function F
 // extends until the next function definition in the same document. This
-// recovers useful call edges for top-level functions but will mis-attribute
-// calls in nested functions.
+// recovers useful call edges for top-level functions.
+//
+// Known limitation: when a nested function (closure / lambda) is
+// defined inside an outer function and the indexer omits EnclosingRange,
+// the outer function's fallback range is truncated at the start of the
+// inner function. Calls after the inner definition are lost from the
+// outer's callgraph. When EnclosingRange IS present, both ranges
+// overlap and calls inside the inner body appear in both caller entries.
+// Fixing this requires attributing to the innermost enclosing range,
+// which is deferred until an indexer produces this pattern in practice.
 //
 // Only symbols present in internal are considered — this keeps file/
 // namespace definitions from segmenting the per-function spans.
