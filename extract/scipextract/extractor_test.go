@@ -330,6 +330,86 @@ func TestStripFileURI(t *testing.T) {
 	}
 }
 
+func TestDisplayLanguage(t *testing.T) {
+	cases := map[string]string{
+		"CPP":           "C++",
+		"cpp":           "C++",
+		"Cpp":           "C++",
+		"CSharp":        "C#",
+		"csharp":        "C#",
+		"ObjectiveC":    "Objective-C",
+		"ObjectiveCPP":  "Objective-C++",
+		"JavaScript":    "JavaScript",
+		"typescript":    "TypeScript",
+		"Go":            "Go",
+		"go":            "Go",
+		"Rust":          "Rust",
+		"rust":          "Rust",
+		"Java":          "Java",
+		"Kotlin":        "Kotlin",
+		"Python":        "Python",
+		"Ruby":          "Ruby",
+		"c":             "C",
+		"C":             "C",
+		"UnknownLang":   "UnknownLang",
+	}
+	for in, want := range cases {
+		if got := displayLanguage(in); got != want {
+			t.Errorf("displayLanguage(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestPickLanguage(t *testing.T) {
+	t.Run("majority wins", func(t *testing.T) {
+		docs := []*scip.Document{
+			{Language: "Rust"},
+			{Language: "Rust"},
+			{Language: "CPP"},
+		}
+		if got := pickLanguage(docs); got != "Rust" {
+			t.Errorf("got %q, want Rust", got)
+		}
+	})
+
+	t.Run("tie broken alphabetically", func(t *testing.T) {
+		docs := []*scip.Document{
+			{Language: "Rust"},
+			{Language: "Go"},
+		}
+		if got := pickLanguage(docs); got != "Go" {
+			t.Errorf("got %q, want Go (alphabetically first)", got)
+		}
+	})
+
+	t.Run("empty language falls back to scheme", func(t *testing.T) {
+		docs := []*scip.Document{
+			{
+				Language: "",
+				Symbols: []*scip.SymbolInformation{
+					{Symbol: "scip-typescript npm pkg 1.0.0 foo()."},
+				},
+			},
+		}
+		if got := pickLanguage(docs); got != "TypeScript" {
+			t.Errorf("got %q, want TypeScript", got)
+		}
+	})
+
+	t.Run("no docs returns empty", func(t *testing.T) {
+		if got := pickLanguage(nil); got != "" {
+			t.Errorf("got %q, want empty", got)
+		}
+	})
+
+	t.Run("normalizes display name", func(t *testing.T) {
+		docs := []*scip.Document{{Language: "CPP"}}
+		if got := pickLanguage(docs); got != "C++" {
+			t.Errorf("got %q, want C++", got)
+		}
+	})
+}
+
 func writeIndex(t *testing.T, dir string, index *scip.Index) string {
 	t.Helper()
 	data, err := proto.Marshal(index)
