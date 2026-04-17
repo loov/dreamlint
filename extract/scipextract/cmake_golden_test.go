@@ -2,8 +2,6 @@ package scipextract
 
 import (
 	"context"
-	"io"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -21,9 +19,6 @@ func TestGolden_CMakeExample(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Silence per-function "no enclosing range" warnings from scip-clang.
-	defer redirectStderr(t)()
-
 	ex := &Extractor{
 		IndexPath:   filepath.Join(root, "index.scip"),
 		ProjectRoot: root,
@@ -165,29 +160,6 @@ func assertBodyContains(t *testing.T, name, body string, needles ...string) {
 		if !strings.Contains(body, n) {
 			t.Errorf("%s body missing %q; body=%q", name, n, body)
 		}
-	}
-}
-
-// redirectStderr silences stderr for the duration of the test so the
-// per-function "no enclosing range" warnings don't clutter -v output.
-func redirectStderr(t *testing.T) func() {
-	t.Helper()
-	orig := os.Stderr
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
-	}
-	os.Stderr = w
-	done := make(chan struct{})
-	go func() {
-		io.Copy(io.Discard, r)
-		close(done)
-	}()
-	return func() {
-		w.Close()
-		os.Stderr = orig
-		<-done
-		r.Close()
 	}
 }
 

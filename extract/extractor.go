@@ -10,6 +10,7 @@ type Result struct {
 	External map[string]*ExternalFunc
 	Types    map[string]*TypeInfo
 	Language string
+	Warnings []string
 }
 
 // Extractor produces analysis units from a source tree or index.

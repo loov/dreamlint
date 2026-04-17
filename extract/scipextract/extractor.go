@@ -117,11 +117,12 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 
 	// Pass 3: bodies use the shared ranges so indexers without
 	// EnclosingRange (e.g. scip-clang) still get useful function bodies.
+	var warnings []string
 	for _, e := range fnEntries {
 		body, warn := extractBody(e.info, e.doc, e.absPath, docRanges[e.doc], src)
 		e.fn.Body = body
 		if warn != "" {
-			fmt.Fprintf(os.Stderr, "scipextract: %s\n", warn)
+			warnings = append(warnings, warn)
 		}
 	}
 	for _, e := range typeEntries {
@@ -156,6 +157,7 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 		External: external,
 		Types:    types,
 		Language: pickLanguage(docs),
+		Warnings: warnings,
 	}, nil
 }
 

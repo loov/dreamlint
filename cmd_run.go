@@ -120,6 +120,9 @@ func run(configPaths, inlineConfigs []string, format string, resume bool, prompt
 	externalFuncs := res.External
 	types := res.Types
 	fmt.Printf("Created %d analysis units (%d external functions, %d types)\n", len(units), len(externalFuncs), len(types))
+	for _, w := range res.Warnings {
+		fmt.Fprintf(os.Stderr, "scipextract: %s\n", w)
+	}
 
 	// Function lookup for receiver-type sibling-method rendering.
 	funcs := make(map[string]*extract.FunctionInfo)

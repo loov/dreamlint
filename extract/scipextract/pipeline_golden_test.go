@@ -51,12 +51,6 @@ func TestPipelineGolden_SCIP(t *testing.T) {
 func runPipelineGolden(t *testing.T, root string) {
 	t.Helper()
 
-	// scipextract logs per-function warnings when the indexer omits
-	// EnclosingRange (scip-clang). Those go to stderr and would
-	// clutter -v output without affecting the captured prompts.
-	restore := silenceStderr(t)
-	defer restore()
-
 	ex := &scipextract.Extractor{
 		IndexPath:   filepath.Join(root, "index.scip"),
 		ProjectRoot: root,
@@ -240,17 +234,3 @@ func sortStrings(s []string) {
 	}
 }
 
-// silenceStderr hides warnings during the pipeline run.
-func silenceStderr(t *testing.T) func() {
-	t.Helper()
-	orig := os.Stderr
-	null, err := os.Open(os.DevNull)
-	if err != nil {
-		t.Fatal(err)
-	}
-	os.Stderr = null
-	return func() {
-		os.Stderr = orig
-		null.Close()
-	}
-}
