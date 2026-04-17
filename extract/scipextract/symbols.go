@@ -69,11 +69,13 @@ func buildFunctionInfo(info *scip.SymbolInformation, doc *scip.Document, absPath
 	pkg := packageName(sym)
 	name := info.DisplayName
 	receiver := ""
+	disambiguator := ""
 	if len(sym.Descriptors) > 0 {
 		last := sym.Descriptors[len(sym.Descriptors)-1]
 		if name == "" {
 			name = last.Name
 		}
+		disambiguator = last.Disambiguator
 		receiver = receiverName(sym.Descriptors)
 	}
 
@@ -85,12 +87,13 @@ func buildFunctionInfo(info *scip.SymbolInformation, doc *scip.Document, absPath
 	pos := definitionPosition(info.Symbol, doc, absPath)
 
 	return &extract.FunctionInfo{
-		Package:   pkg,
-		Name:      name,
-		Receiver:  receiver,
-		Signature: sig,
-		Doc:       strings.Join(info.Documentation, "\n\n"),
-		Position:  pos,
+		Package:       pkg,
+		Name:          name,
+		Disambiguator: disambiguator,
+		Receiver:      receiver,
+		Signature:     sig,
+		Doc:           strings.Join(info.Documentation, "\n\n"),
+		Position:      pos,
 	}
 }
 

@@ -13,14 +13,15 @@ import "go/token"
 // the indexed project. Empty for free functions and for methods on types
 // defined outside the analyzed code.
 type FunctionInfo struct {
-	Package      string
-	Name         string
-	Receiver     string
-	ReceiverType string
-	Signature    string
-	Body         string
-	Doc          string
-	Position     token.Position
+	Package        string
+	Name           string
+	Disambiguator  string
+	Receiver       string
+	ReceiverType   string
+	Signature      string
+	Body           string
+	Doc            string
+	Position       token.Position
 }
 
 // ID returns the canonical function ID used to key functions in maps
@@ -28,11 +29,19 @@ type FunctionInfo struct {
 //
 //	Package + "." + Name                 (free functions)
 //	Package + ".(" + Receiver + ")." + Name (methods)
+//
+// When Disambiguator is non-empty (overloaded methods in Java, C++,
+// TypeScript), it is appended as Name + "(" + Disambiguator + ")" so
+// each overload gets a unique ID.
 func (f *FunctionInfo) ID() string {
-	if f.Receiver != "" {
-		return f.Package + ".(" + f.Receiver + ")." + f.Name
+	name := f.Name
+	if f.Disambiguator != "" {
+		name = f.Name + "(" + f.Disambiguator + ")"
 	}
-	return f.Package + "." + f.Name
+	if f.Receiver != "" {
+		return f.Package + ".(" + f.Receiver + ")." + name
+	}
+	return f.Package + "." + name
 }
 
 // TypeInfo holds information about a user-defined type: class, struct,

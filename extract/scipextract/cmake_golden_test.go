@@ -32,15 +32,15 @@ func TestGolden_CMakeExample(t *testing.T) {
 		t.Errorf("Language = %q, want C++", res.Language)
 	}
 
-	sccID := "math.is_even+math.is_odd"
+	sccID := "math.is_even(83c267b20bac841a)+math.is_odd(83c267b20bac841a)"
 	want := map[string]bool{
-		"math.add":                true,
-		"math.multiply":           true,
-		"math.(Counter).Counter":  true,
-		"math.(Counter).bump":     true,
-		"math.(Counter).value":    true,
-		sccID:                     true,
-		".main":                   true,
+		"math.add(9b79fb6aee4c0440)":                true,
+		"math.multiply(9b79fb6aee4c0440)":           true,
+		"math.(Counter).Counter(49f6e7a06ebc5aa8)":  true,
+		"math.(Counter).bump(b126dc7c1de90089)":     true,
+		"math.(Counter).value(455f465bc33b4cdf)":    true,
+		sccID:                                        true,
+		".main(b126dc7c1de90089)":                   true,
 	}
 	got := map[string]bool{}
 	byID := map[string]*extract.AnalysisUnit{}
@@ -69,10 +69,10 @@ func TestGolden_CMakeExample(t *testing.T) {
 		return -1
 	}
 	for _, pair := range [][2]string{
-		{"math.add", "math.multiply"},
-		{"math.add", "math.(Counter).bump"},
-		{"math.(Counter).Counter", ".main"},
-		{sccID, ".main"},
+		{"math.add(9b79fb6aee4c0440)", "math.multiply(9b79fb6aee4c0440)"},
+		{"math.add(9b79fb6aee4c0440)", "math.(Counter).bump(b126dc7c1de90089)"},
+		{"math.(Counter).Counter(49f6e7a06ebc5aa8)", ".main(b126dc7c1de90089)"},
+		{sccID, ".main(b126dc7c1de90089)"},
 	} {
 		if indexOf(pair[0]) >= indexOf(pair[1]) {
 			t.Errorf("topology: %q should precede %q", pair[0], pair[1])
@@ -82,9 +82,9 @@ func TestGolden_CMakeExample(t *testing.T) {
 	// Class methods carry the Counter receiver (the last Type descriptor
 	// before the method, in scip-clang's encoding).
 	for _, id := range []string{
-		"math.(Counter).Counter",
-		"math.(Counter).bump",
-		"math.(Counter).value",
+		"math.(Counter).Counter(49f6e7a06ebc5aa8)",
+		"math.(Counter).bump(b126dc7c1de90089)",
+		"math.(Counter).value(455f465bc33b4cdf)",
 	} {
 		if r := byID[id].Functions[0].Receiver; r != "Counter" {
 			t.Errorf("%s receiver = %q, want Counter", id, r)
@@ -108,21 +108,21 @@ func TestGolden_CMakeExample(t *testing.T) {
 	}
 
 	// Callgraph checks.
-	if !slices.Contains(byID["math.(Counter).bump"].Callees, "math.add") {
+	if !slices.Contains(byID["math.(Counter).bump(b126dc7c1de90089)"].Callees, "math.add(9b79fb6aee4c0440)") {
 		t.Errorf("bump.Callees = %v, want to contain math.add",
-			byID["math.(Counter).bump"].Callees)
+			byID["math.(Counter).bump(b126dc7c1de90089)"].Callees)
 	}
-	if !slices.Contains(byID["math.multiply"].Callees, "math.add") {
+	if !slices.Contains(byID["math.multiply(9b79fb6aee4c0440)"].Callees, "math.add(9b79fb6aee4c0440)") {
 		t.Errorf("multiply.Callees = %v, want to contain math.add",
-			byID["math.multiply"].Callees)
+			byID["math.multiply(9b79fb6aee4c0440)"].Callees)
 	}
-	mainCallees := byID[".main"].Callees
+	mainCallees := byID[".main(b126dc7c1de90089)"].Callees
 	for _, want := range []string{
-		"math.add",
-		"math.multiply",
-		"math.(Counter).Counter",
-		"math.(Counter).bump",
-		"math.(Counter).value",
+		"math.add(9b79fb6aee4c0440)",
+		"math.multiply(9b79fb6aee4c0440)",
+		"math.(Counter).Counter(49f6e7a06ebc5aa8)",
+		"math.(Counter).bump(b126dc7c1de90089)",
+		"math.(Counter).value(455f465bc33b4cdf)",
 		sccID,
 	} {
 		if !slices.Contains(mainCallees, want) {
@@ -132,9 +132,9 @@ func TestGolden_CMakeExample(t *testing.T) {
 
 	// Bodies contain the expected snippets despite scip-clang's lack of
 	// EnclosingRange (the span-to-next-function heuristic takes over).
-	assertBodyContains(t, "add", byID["math.add"].Functions[0].Body,
+	assertBodyContains(t, "add", byID["math.add(9b79fb6aee4c0440)"].Functions[0].Body,
 		"int add(int a, int b)", "return a + b;")
-	assertBodyContains(t, "bump", byID["math.(Counter).bump"].Functions[0].Body,
+	assertBodyContains(t, "bump", byID["math.(Counter).bump(b126dc7c1de90089)"].Functions[0].Body,
 		"int Counter::bump()", "n = add(n, 1);")
 	for _, f := range scc.Functions {
 		if !strings.Contains(f.Body, "return is_"+flip(f.Name)+"(n - 1);") {

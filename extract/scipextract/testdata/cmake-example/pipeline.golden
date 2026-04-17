@@ -1,14 +1,14 @@
 fixture language: C++
 units (7):
-  [0] math.(Counter).Counter (callees=[])
-  [1] math.add (callees=[])
-  [2] math.(Counter).bump (callees=[math.add])
-  [3] math.(Counter).value (callees=[])
-  [4] math.multiply (callees=[math.add])
-  [5] math.is_even+math.is_odd (callees=[])
-  [6] .main (callees=[math.(Counter).Counter math.(Counter).bump math.(Counter).value math.multiply math.add math.is_even+math.is_odd])
+  [0] math.(Counter).Counter(49f6e7a06ebc5aa8) (callees=[])
+  [1] math.add(9b79fb6aee4c0440) (callees=[])
+  [2] math.(Counter).bump(b126dc7c1de90089) (callees=[math.add(9b79fb6aee4c0440)])
+  [3] math.(Counter).value(455f465bc33b4cdf) (callees=[])
+  [4] math.multiply(9b79fb6aee4c0440) (callees=[math.add(9b79fb6aee4c0440)])
+  [5] math.is_even(83c267b20bac841a)+math.is_odd(83c267b20bac841a) (callees=[])
+  [6] .main(b126dc7c1de90089) (callees=[math.(Counter).Counter(49f6e7a06ebc5aa8) math.(Counter).bump(b126dc7c1de90089) math.(Counter).value(455f465bc33b4cdf) math.multiply(9b79fb6aee4c0440) math.add(9b79fb6aee4c0440) math.is_even(83c267b20bac841a)+math.is_odd(83c267b20bac841a)])
 types (1):
-  math.Counter (type, methods=[math.(Counter).Counter math.(Counter).value math.(Counter).bump])
+  math.Counter (type, methods=[math.(Counter).Counter(49f6e7a06ebc5aa8) math.(Counter).value(455f465bc33b4cdf) math.(Counter).bump(b126dc7c1de90089)])
 external symbols (1):
   std::printf
 
@@ -58,7 +58,7 @@ Field guidance:
 - invariants: conditions the type guarantees to hold between method calls (e.g. "value is always non-negative"); empty array if none apply
 - security: sensitive data held, trust boundaries crossed, validation responsibilities; empty array if nothing security-relevant applies
 
-== prompt 1 :: unit=math.(Counter).Counter :: pass=summary ==
+== prompt 1 :: unit=math.(Counter).Counter(49f6e7a06ebc5aa8) :: pass=summary ==
 You are analyzing a C++ function to create a summary of its behavior.
 
 ```
@@ -113,7 +113,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 2 :: unit=math.(Counter).Counter :: pass=baseline ==
+== prompt 2 :: unit=math.(Counter).Counter(49f6e7a06ebc5aa8) :: pass=baseline ==
 You are reviewing C++ code for logical correctness.
 
 ```
@@ -189,7 +189,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 3 :: unit=math.add :: pass=summary ==
+== prompt 3 :: unit=math.add(9b79fb6aee4c0440) :: pass=summary ==
 You are analyzing a C++ function to create a summary of its behavior.
 
 ```
@@ -212,7 +212,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 4 :: unit=math.add :: pass=baseline ==
+== prompt 4 :: unit=math.add(9b79fb6aee4c0440) :: pass=baseline ==
 You are reviewing C++ code for logical correctness.
 
 ```
@@ -256,7 +256,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 5 :: unit=math.(Counter).bump :: pass=summary ==
+== prompt 5 :: unit=math.(Counter).bump(b126dc7c1de90089) :: pass=summary ==
 You are analyzing a C++ function to create a summary of its behavior.
 
 ```
@@ -302,7 +302,7 @@ Other methods on Counter:
 
 ## Called Functions
 
-### math.add
+### math.add(9b79fb6aee4c0440)
 Purpose: test purpose
 Behavior: test behavior
 Invariants:
@@ -322,7 +322,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 6 :: unit=math.(Counter).bump :: pass=baseline ==
+== prompt 6 :: unit=math.(Counter).bump(b126dc7c1de90089) :: pass=baseline ==
 You are reviewing C++ code for logical correctness.
 
 ```
@@ -401,7 +401,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 7 :: unit=math.(Counter).value :: pass=summary ==
+== prompt 7 :: unit=math.(Counter).value(455f465bc33b4cdf) :: pass=summary ==
 You are analyzing a C++ function to create a summary of its behavior.
 
 ```
@@ -458,7 +458,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 8 :: unit=math.(Counter).value :: pass=baseline ==
+== prompt 8 :: unit=math.(Counter).value(455f465bc33b4cdf) :: pass=baseline ==
 You are reviewing C++ code for logical correctness.
 
 ```
@@ -536,7 +536,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 9 :: unit=math.multiply :: pass=summary ==
+== prompt 9 :: unit=math.multiply(9b79fb6aee4c0440) :: pass=summary ==
 You are analyzing a C++ function to create a summary of its behavior.
 
 ```
@@ -551,7 +551,7 @@ int multiply(int a, int b) {
 
 ## Called Functions
 
-### math.add
+### math.add(9b79fb6aee4c0440)
 Purpose: test purpose
 Behavior: test behavior
 Invariants:
@@ -571,7 +571,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 10 :: unit=math.multiply :: pass=baseline ==
+== prompt 10 :: unit=math.multiply(9b79fb6aee4c0440) :: pass=baseline ==
 You are reviewing C++ code for logical correctness.
 
 ```
@@ -619,7 +619,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 11 :: unit=math.is_even+math.is_odd :: pass=summary ==
+== prompt 11 :: unit=math.is_even(83c267b20bac841a)+math.is_odd(83c267b20bac841a) :: pass=summary ==
 You are analyzing a C++ function to create a summary of its behavior.
 
 
@@ -660,7 +660,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 12 :: unit=math.is_even+math.is_odd :: pass=baseline ==
+== prompt 12 :: unit=math.is_even(83c267b20bac841a)+math.is_odd(83c267b20bac841a) :: pass=baseline ==
 You are reviewing C++ code for logical correctness.
 
 
@@ -722,7 +722,7 @@ Example:
 
 If no issues found, return {"issues": []}.
 
-== prompt 13 :: unit=.main :: pass=summary ==
+== prompt 13 :: unit=.main(b126dc7c1de90089) :: pass=summary ==
 You are analyzing a C++ function to create a summary of its behavior.
 
 ```
@@ -741,37 +741,37 @@ int main() {
 
 ## Called Functions
 
-### math.(Counter).Counter
+### math.(Counter).Counter(49f6e7a06ebc5aa8)
 Purpose: test purpose
 Behavior: test behavior
 Invariants:
 - test invariant
 
-### math.(Counter).bump
+### math.(Counter).bump(b126dc7c1de90089)
 Purpose: test purpose
 Behavior: test behavior
 Invariants:
 - test invariant
 
-### math.(Counter).value
+### math.(Counter).value(455f465bc33b4cdf)
 Purpose: test purpose
 Behavior: test behavior
 Invariants:
 - test invariant
 
-### math.multiply
+### math.multiply(9b79fb6aee4c0440)
 Purpose: test purpose
 Behavior: test behavior
 Invariants:
 - test invariant
 
-### math.add
+### math.add(9b79fb6aee4c0440)
 Purpose: test purpose
 Behavior: test behavior
 Invariants:
 - test invariant
 
-### math.is_even+math.is_odd
+### math.is_even(83c267b20bac841a)+math.is_odd(83c267b20bac841a)
 Purpose: test purpose
 Behavior: test behavior
 Invariants:
@@ -797,7 +797,7 @@ Field guidance:
 - invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
 - security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
 
-== prompt 14 :: unit=.main :: pass=baseline ==
+== prompt 14 :: unit=.main(b126dc7c1de90089) :: pass=baseline ==
 You are reviewing C++ code for logical correctness.
 
 ```

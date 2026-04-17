@@ -25,11 +25,7 @@ func BuildAnalysisUnits(funcs []*FunctionInfo, graph map[string][]string) []*Ana
 	// Build function lookup
 	funcMap := make(map[string]*FunctionInfo)
 	for _, f := range funcs {
-		id := f.Package + "." + f.Name
-		if f.Receiver != "" {
-			id = f.Package + ".(" + f.Receiver + ")." + f.Name
-		}
-		funcMap[id] = f
+		funcMap[f.ID()] = f
 	}
 
 	// Filter graph to only include internal functions
@@ -86,11 +82,7 @@ func BuildAnalysisUnits(funcs []*FunctionInfo, graph map[string][]string) []*Ana
 
 		// Build ID: simpler ID for single-function units
 		if len(unit.Functions) == 1 {
-			f := unit.Functions[0]
-			unit.ID = f.Package + "." + f.Name
-			if f.Receiver != "" {
-				unit.ID = f.Package + ".(" + f.Receiver + ")." + f.Name
-			}
+			unit.ID = unit.Functions[0].ID()
 		} else {
 			// Build ID from sorted function names for multi-function SCCs
 			sortedSCC := make([]string, len(scc))

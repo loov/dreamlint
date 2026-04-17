@@ -89,7 +89,7 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 				if fn == nil {
 					continue
 				}
-				symbolToID[sym.Symbol] = functionID(fn)
+				symbolToID[sym.Symbol] = fn.ID()
 				fnEntries = append(fnEntries, fnEntry{info: sym, doc: doc, absPath: absPath, fn: fn})
 				funcs = append(funcs, fn)
 			case isTypeSymbol(sym):
@@ -146,7 +146,7 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 			continue
 		}
 		fn.ReceiverType = id
-		ti.Methods = append(ti.Methods, functionID(fn))
+		ti.Methods = append(ti.Methods, fn.ID())
 	}
 
 	graph, external := buildCallgraph(docs, &index, docRanges, symbolToID)
@@ -161,13 +161,6 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 	}, nil
 }
 
-// functionID matches the id format used by extract.BuildAnalysisUnits.
-func functionID(f *extract.FunctionInfo) string {
-	if f.Receiver != "" {
-		return f.Package + ".(" + f.Receiver + ")." + f.Name
-	}
-	return f.Package + "." + f.Name
-}
 
 // filterDocuments keeps documents whose RelativePath matches any of the globs.
 // Empty filters means keep all.
