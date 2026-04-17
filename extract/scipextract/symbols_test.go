@@ -116,3 +116,68 @@ func TestBuildFunctionInfo(t *testing.T) {
 		t.Errorf("Position = %d:%d, want 11:5 (1-based)", fn.Position.Line, fn.Position.Column)
 	}
 }
+
+func TestDefinitionPosition_MultipleDefinitions(t *testing.T) {
+	sym := "scip-clang pkg example 0.1.0 foo()."
+	doc := &scip.Document{
+		RelativePath: "src/main.cpp",
+		Occurrences: []*scip.Occurrence{
+			{
+				Symbol:      sym,
+				Range:       []int32{2, 5, 2, 8},
+				SymbolRoles: int32(scip.SymbolRole_Definition),
+			},
+			{
+				Symbol:      sym,
+				Range:       []int32{10, 5, 10, 8},
+				SymbolRoles: int32(scip.SymbolRole_Definition),
+			},
+		},
+	}
+	pos := definitionPosition(sym, doc, "/repo/src/main.cpp")
+	if pos.Line != 3 || pos.Column != 6 {
+		t.Errorf("got %d:%d, want 3:6 (first-wins, 1-based)", pos.Line, pos.Column)
+	}
+}
+
+func TestDefinitionPosition_NoDefinition(t *testing.T) {
+	sym := "rust-analyzer cargo example 0.1.0 bar()."
+	doc := &scip.Document{
+		RelativePath: "src/lib.rs",
+		Occurrences: []*scip.Occurrence{
+			{
+				Symbol:      sym,
+				Range:       []int32{5, 4, 5, 7},
+				SymbolRoles: int32(scip.SymbolRole_ReadAccess),
+			},
+		},
+	}
+	pos := definitionPosition(sym, doc, "/repo/src/lib.rs")
+	if pos.Line != 0 {
+		t.Errorf("got Line=%d, want 0 (no definition)", pos.Line)
+	}
+	if pos.Filename != "/repo/src/lib.rs" {
+		t.Errorf("Filename = %q, want /repo/src/lib.rs", pos.Filename)
+	}
+}
+
+func TestIsCallableDescriptor(t *testing.T) {
+	cases := []struct {
+		name string
+		d    *scip.Descriptor
+		want bool
+	}{
+		{"Method", &scip.Descriptor{Suffix: scip.Descriptor_Method}, true},
+		{"Macro", &scip.Descriptor{Suffix: scip.Descriptor_Macro}, true},
+		{"Type", &scip.Descriptor{Suffix: scip.Descriptor_Type}, false},
+		{"Namespace", &scip.Descriptor{Suffix: scip.Descriptor_Namespace}, false},
+		{"nil", nil, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := isCallableDescriptor(tc.d); got != tc.want {
+				t.Errorf("isCallableDescriptor() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
