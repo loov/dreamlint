@@ -105,3 +105,146 @@ func TestExtractBody_ReadsFromDisk(t *testing.T) {
 		t.Errorf("body mismatch: %q", body)
 	}
 }
+
+func TestSliceLinesHalfOpen_EdgeCases(t *testing.T) {
+	text := "line0\nline1\nline2\nline3\n"
+
+	t.Run("empty text line 0", func(t *testing.T) {
+		got, ok := sliceLinesHalfOpen("", scip.Range{
+			Start: scip.Position{Line: 0},
+			End:   scip.Position{Line: 0, Character: 1},
+		})
+		if !ok {
+			t.Fatal("expected ok — SplitAfter yields one empty element")
+		}
+		if got != "" {
+			t.Errorf("got %q, want empty", got)
+		}
+	})
+
+	t.Run("empty text line 1", func(t *testing.T) {
+		_, ok := sliceLinesHalfOpen("", scip.Range{
+			Start: scip.Position{Line: 1},
+			End:   scip.Position{Line: 1, Character: 1},
+		})
+		if ok {
+			t.Error("expected false for line beyond single empty element")
+		}
+	})
+
+	t.Run("start beyond EOF", func(t *testing.T) {
+		_, ok := sliceLinesHalfOpen(text, scip.Range{
+			Start: scip.Position{Line: 99},
+			End:   scip.Position{Line: 100, Character: 1},
+		})
+		if ok {
+			t.Error("expected false for start beyond EOF")
+		}
+	})
+
+	t.Run("end character zero excludes end line", func(t *testing.T) {
+		got, ok := sliceLinesHalfOpen(text, scip.Range{
+			Start: scip.Position{Line: 0},
+			End:   scip.Position{Line: 2, Character: 0},
+		})
+		if !ok {
+			t.Fatal("expected ok")
+		}
+		if got != "line0\nline1" {
+			t.Errorf("got %q, want %q", got, "line0\nline1")
+		}
+	})
+
+	t.Run("end past EOF clamped", func(t *testing.T) {
+		got, ok := sliceLinesHalfOpen(text, scip.Range{
+			Start: scip.Position{Line: 2},
+			End:   scip.Position{Line: 999, Character: 1},
+		})
+		if !ok {
+			t.Fatal("expected ok")
+		}
+		if got != "line2\nline3" {
+			t.Errorf("got %q, want %q", got, "line2\nline3")
+		}
+	})
+
+	t.Run("single line", func(t *testing.T) {
+		got, ok := sliceLinesHalfOpen(text, scip.Range{
+			Start: scip.Position{Line: 1},
+			End:   scip.Position{Line: 1, Character: 5},
+		})
+		if !ok {
+			t.Fatal("expected ok")
+		}
+		if got != "line1" {
+			t.Errorf("got %q, want %q", got, "line1")
+		}
+	})
+
+	t.Run("end before start clamped to start", func(t *testing.T) {
+		got, ok := sliceLinesHalfOpen(text, scip.Range{
+			Start: scip.Position{Line: 2},
+			End:   scip.Position{Line: 0, Character: 0},
+		})
+		if !ok {
+			t.Fatal("expected ok")
+		}
+		if got != "line2" {
+			t.Errorf("got %q, want %q", got, "line2")
+		}
+	})
+}
+
+func TestSliceRange_PreferDocText(t *testing.T) {
+	text := "fn a() {}\nfn b() {}\n"
+	doc := &scip.Document{
+		RelativePath: "src/lib.rs",
+		Text:         text,
+	}
+	cache := newSourceCache("/nonexistent")
+	r := scip.Range{
+		Start: scip.Position{Line: 0},
+		End:   scip.Position{Line: 0, Character: 9},
+	}
+	got, ok := sliceRange(r, doc, "/nonexistent/src/lib.rs", cache)
+	if !ok {
+		t.Fatal("expected ok from doc.Text path")
+	}
+	if got != "fn a() {}" {
+		t.Errorf("got %q", got)
+	}
+}
+
+func TestSliceRange_DiskFallback(t *testing.T) {
+	dir := t.TempDir()
+	abs := filepath.Join(dir, "main.rs")
+	if err := os.WriteFile(abs, []byte("fn x() {}\nfn y() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	doc := &scip.Document{RelativePath: "main.rs"}
+	cache := newSourceCache(dir)
+	r := scip.Range{
+		Start: scip.Position{Line: 1},
+		End:   scip.Position{Line: 1, Character: 9},
+	}
+	got, ok := sliceRange(r, doc, abs, cache)
+	if !ok {
+		t.Fatal("expected ok from disk path")
+	}
+	if got != "fn y() {}" {
+		t.Errorf("got %q", got)
+	}
+}
+
+func TestSliceRange_MissingFile(t *testing.T) {
+	doc := &scip.Document{RelativePath: "gone.rs"}
+	cache := newSourceCache("/nonexistent")
+	r := scip.Range{
+		Start: scip.Position{Line: 0},
+		End:   scip.Position{Line: 0, Character: 5},
+	}
+	_, ok := sliceRange(r, doc, "/nonexistent/gone.rs", cache)
+	if ok {
+		t.Error("expected false for missing file")
+	}
+}
