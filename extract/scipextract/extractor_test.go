@@ -255,6 +255,63 @@ func TestFilterDocuments(t *testing.T) {
 	})
 }
 
+func TestExtract_ProjectRootOverride(t *testing.T) {
+	dir := t.TempDir()
+	rel := "src/lib.rs"
+	abs := filepath.Join(dir, rel)
+	if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	source := "fn hello() -> u32 {\n    42\n}\n"
+	if err := os.WriteFile(abs, []byte(source), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	index := &scip.Index{
+		Metadata: &scip.Metadata{
+			ProjectRoot: "file:///nonexistent/bogus/path",
+		},
+		Documents: []*scip.Document{{
+			Language:     "Rust",
+			RelativePath: rel,
+			Symbols: []*scip.SymbolInformation{{
+				Symbol:      "rust-analyzer cargo example 0.1.0 hello().",
+				Kind:        scip.SymbolInformation_Function,
+				DisplayName: "hello",
+			}},
+			Occurrences: []*scip.Occurrence{{
+				Symbol:         "rust-analyzer cargo example 0.1.0 hello().",
+				Range:          []int32{0, 3, 0, 8},
+				EnclosingRange: []int32{0, 0, 2, 1},
+				SymbolRoles:    int32(scip.SymbolRole_Definition),
+			}},
+		}},
+	}
+
+	data, err := proto.Marshal(index)
+	if err != nil {
+		t.Fatal(err)
+	}
+	idxPath := filepath.Join(dir, "index.scip")
+	if err := os.WriteFile(idxPath, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	ex := &Extractor{IndexPath: idxPath, ProjectRoot: dir}
+	res, err := ex.Extract(context.Background())
+	if err != nil {
+		t.Fatalf("Extract: %v", err)
+	}
+
+	if len(res.Units) != 1 {
+		t.Fatalf("got %d units, want 1", len(res.Units))
+	}
+	fn := res.Units[0].Functions[0]
+	if fn.Body == "" {
+		t.Error("body empty — ProjectRoot override did not resolve source file")
+	}
+}
+
 func TestStripFileURI(t *testing.T) {
 	cases := map[string]string{
 		"":                                "",
