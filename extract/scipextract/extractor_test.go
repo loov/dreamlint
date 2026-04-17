@@ -218,6 +218,43 @@ type extractFunctionInfoView struct {
 	ReceiverType string
 }
 
+func TestFilterDocuments(t *testing.T) {
+	docs := []*scip.Document{
+		{RelativePath: "src/main.rs"},
+		{RelativePath: "src/lib.rs"},
+		{RelativePath: "tests/integration.rs"},
+		{RelativePath: "build.rs"},
+	}
+
+	t.Run("empty filters keeps all", func(t *testing.T) {
+		got := filterDocuments(docs, nil)
+		if len(got) != len(docs) {
+			t.Errorf("got %d docs, want %d", len(got), len(docs))
+		}
+	})
+
+	t.Run("single glob", func(t *testing.T) {
+		got := filterDocuments(docs, []string{"src/*.rs"})
+		if len(got) != 2 {
+			t.Errorf("got %d docs, want 2", len(got))
+		}
+	})
+
+	t.Run("multiple globs", func(t *testing.T) {
+		got := filterDocuments(docs, []string{"src/*.rs", "build.rs"})
+		if len(got) != 3 {
+			t.Errorf("got %d docs, want 3", len(got))
+		}
+	})
+
+	t.Run("no match", func(t *testing.T) {
+		got := filterDocuments(docs, []string{"*.go"})
+		if len(got) != 0 {
+			t.Errorf("got %d docs, want 0", len(got))
+		}
+	})
+}
+
 func TestStripFileURI(t *testing.T) {
 	cases := map[string]string{
 		"":                                "",
