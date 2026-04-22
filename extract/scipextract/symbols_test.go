@@ -117,6 +117,51 @@ func TestBuildFunctionInfo(t *testing.T) {
 	}
 }
 
+func TestPackageName_NestedClasses(t *testing.T) {
+	cases := []struct {
+		name    string
+		symbol  string
+		wantPkg string
+	}{
+		{
+			name:    "top-level method",
+			symbol:  "scip-java maven com.example 1.0.0 com/example/Foo#bar().",
+			wantPkg: "com.example/com/example",
+		},
+		{
+			name:    "nested class method includes outer type",
+			symbol:  "scip-java maven com.example 1.0.0 com/example/Outer#Inner#bar().",
+			wantPkg: "com.example/com/example/Outer",
+		},
+		{
+			name:    "deeply nested class",
+			symbol:  "scip-java maven com.example 1.0.0 com/example/A#B#C#bar().",
+			wantPkg: "com.example/com/example/A/B",
+		},
+		{
+			name:    "type symbol (not method)",
+			symbol:  "scip-java maven com.example 1.0.0 com/example/Outer#Inner#",
+			wantPkg: "com.example/com/example/Outer",
+		},
+		{
+			name:    "free function (no type)",
+			symbol:  "scip-java maven com.example 1.0.0 com/example/main().",
+			wantPkg: "com.example/com/example",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			sym, err := scip.ParseSymbol(tc.symbol)
+			if err != nil {
+				t.Fatalf("ParseSymbol: %v", err)
+			}
+			if got := packageName(sym); got != tc.wantPkg {
+				t.Errorf("packageName(%q) = %q, want %q", tc.symbol, got, tc.wantPkg)
+			}
+		})
+	}
+}
+
 func TestDefinitionPosition_MultipleDefinitions(t *testing.T) {
 	sym := "scip-clang pkg example 0.1.0 foo()."
 	doc := &scip.Document{

@@ -135,17 +135,36 @@ func receiverName(descriptors []*scip.Descriptor) string {
 }
 
 // packageName builds a package identifier from the SCIP Symbol's Package
-// metadata plus any namespace descriptors. Languages that don't express
-// packages (e.g. C) leave Package nil; we then fall back to joined
-// namespace descriptor names.
+// metadata, namespace descriptors, and enclosing type descriptors.
+//
+// The last Type descriptor is excluded because it represents the
+// receiver (for methods) or the type itself (for type symbols). All
+// earlier Type descriptors are included so that nested classes in
+// different outer types get distinct packages. For example,
+// `Outer#Inner#method().` includes "Outer" in the package; "Inner" is
+// the receiver, not part of the package.
 func packageName(sym *scip.Symbol) string {
 	var parts []string
 	if sym.Package != nil && sym.Package.Name != "" {
 		parts = append(parts, sym.Package.Name)
 	}
-	for _, d := range sym.Descriptors {
-		if d.Suffix == scip.Descriptor_Namespace {
+	// Find the index of the last Type descriptor — it becomes the
+	// receiver or type name and must NOT be part of the package.
+	lastType := -1
+	for i := len(sym.Descriptors) - 1; i >= 0; i-- {
+		if sym.Descriptors[i].Suffix == scip.Descriptor_Type {
+			lastType = i
+			break
+		}
+	}
+	for i, d := range sym.Descriptors {
+		switch d.Suffix {
+		case scip.Descriptor_Namespace:
 			parts = append(parts, d.Name)
+		case scip.Descriptor_Type:
+			if i != lastType {
+				parts = append(parts, d.Name)
+			}
 		}
 	}
 	return strings.Join(parts, "/")
