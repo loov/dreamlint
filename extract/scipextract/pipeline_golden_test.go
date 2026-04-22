@@ -34,6 +34,7 @@ func TestPipelineGolden_SCIP(t *testing.T) {
 	fixtures := []string{
 		"cmake-example",
 		"go-example",
+		"java-example",
 		"rust-example",
 		"typescript-example",
 	}

@@ -225,7 +225,7 @@ func inferLanguageFromScheme(docs []*scip.Document) string {
 			switch sym.Scheme {
 			case "scip-typescript":
 				return "TypeScript"
-			case "scip-java":
+			case "scip-java", "semanticdb":
 				return "Java"
 			case "scip-python":
 				return "Python"

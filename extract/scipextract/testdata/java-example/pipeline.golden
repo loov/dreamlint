@@ -1,0 +1,1535 @@
+fixture language: Java
+units (9):
+  [0] maven/com.example/java-example/example.(Counter).<init> (callees=[])
+  [1] maven/com.example/java-example/example.(Math).add (callees=[])
+  [2] maven/com.example/java-example/example.(Counter).bump (callees=[maven/com.example/java-example/example.(Math).add])
+  [3] maven/com.example/java-example/example.(Counter).value (callees=[])
+  [4] maven/com.example/java-example/example.(Main).<init> (callees=[])
+  [5] maven/com.example/java-example/example.(Math).multiply (callees=[maven/com.example/java-example/example.(Math).add])
+  [6] maven/com.example/java-example/example.(Math).isEven+maven/com.example/java-example/example.(Math).isOdd (callees=[])
+  [7] maven/com.example/java-example/example.(Main).main (callees=[maven/com.example/java-example/example.(Math).add maven/com.example/java-example/example.(Math).multiply maven/com.example/java-example/example.(Counter).<init> maven/com.example/java-example/example.(Counter).bump maven/com.example/java-example/example.(Counter).value maven/com.example/java-example/example.(Math).isEven+maven/com.example/java-example/example.(Math).isOdd])
+  [8] maven/com.example/java-example/example.(Math).<init> (callees=[])
+types (3):
+  maven/com.example/java-example/example.Counter (class, methods=[maven/com.example/java-example/example.(Counter).<init> maven/com.example/java-example/example.(Counter).bump maven/com.example/java-example/example.(Counter).value])
+  maven/com.example/java-example/example.Main (class, methods=[maven/com.example/java-example/example.(Main).<init> maven/com.example/java-example/example.(Main).main])
+  maven/com.example/java-example/example.Math (class, methods=[maven/com.example/java-example/example.(Math).<init> maven/com.example/java-example/example.(Math).add maven/com.example/java-example/example.(Math).multiply maven/com.example/java-example/example.(Math).isEven maven/com.example/java-example/example.(Math).isOdd])
+external symbols (3):
+  jdk/java/io::println
+  jdk/java/io::println
+  jdk/java/io::println
+
+== prompt 0 :: type=maven/com.example/java-example/example.Counter :: pass=type_summary ==
+You are analyzing a Java class named Counter to summarize what it represents.
+
+```
+public class Counter {
+    private int n;
+
+    /** Creates a zeroed counter. */
+    public Counter() {
+        this.n = 0;
+    }
+
+    /** Increments by one, returns the new value. */
+    public int bump() {
+        this.n = Math.add(this.n, 1);
+        return this.n;
+    }
+
+    /** Returns the current value. */
+    public int value() {
+        return this.n;
+    }
+}
+```
+
+Documentation: Counter accumulates a running total.
+
+Methods:
+- `public Counter()` — Creates a zeroed counter.
+- `public int bump()` — Increments by one, returns the new value.
+- `public int value()` — Returns the current value.
+
+Analyze this class and respond with JSON in this exact format:
+{
+  "purpose": "One sentence: what this class represents, from a caller's perspective",
+  "behavior": "Lifecycle, mutability, and how instances behave across method calls",
+  "invariants": ["invariants that hold across all method calls"],
+  "security": ["security-relevant state, contracts, or data this type is responsible for"]
+}
+
+Field guidance:
+- purpose: describe the concept the type models, not the syntactic shape (e.g. "a thread-safe counter", not "a struct with an int field")
+- behavior: lifetime, mutability, thread-safety, cloneability, and any state transitions enforced by the methods
+- invariants: conditions the type guarantees to hold between method calls (e.g. "value is always non-negative"); empty array if none apply
+- security: sensitive data held, trust boundaries crossed, validation responsibilities; empty array if nothing security-relevant applies
+
+== prompt 1 :: type=maven/com.example/java-example/example.Main :: pass=type_summary ==
+You are analyzing a Java class named Main to summarize what it represents.
+
+```
+public class Main {
+    public static void main(String[] args) {
+        int sum = Math.add(1, 2);
+        int product = Math.multiply(3, 4);
+        System.out.println(sum + " " + product);
+
+        Counter c = new Counter();
+        c.bump();
+        System.out.println(c.value());
+
+        System.out.println(Math.isEven(42));
+    }
+}
+```
+
+Documentation: Entry point.
+
+Methods:
+- `public Main()`
+- `public static void main(String[] args)`
+
+Analyze this class and respond with JSON in this exact format:
+{
+  "purpose": "One sentence: what this class represents, from a caller's perspective",
+  "behavior": "Lifecycle, mutability, and how instances behave across method calls",
+  "invariants": ["invariants that hold across all method calls"],
+  "security": ["security-relevant state, contracts, or data this type is responsible for"]
+}
+
+Field guidance:
+- purpose: describe the concept the type models, not the syntactic shape (e.g. "a thread-safe counter", not "a struct with an int field")
+- behavior: lifetime, mutability, thread-safety, cloneability, and any state transitions enforced by the methods
+- invariants: conditions the type guarantees to hold between method calls (e.g. "value is always non-negative"); empty array if none apply
+- security: sensitive data held, trust boundaries crossed, validation responsibilities; empty array if nothing security-relevant applies
+
+== prompt 2 :: type=maven/com.example/java-example/example.Math :: pass=type_summary ==
+You are analyzing a Java class named Math to summarize what it represents.
+
+```
+public class Math {
+    /** Adds two numbers. */
+    public static int add(int a, int b) {
+        return a + b;
+    }
+
+    /** Multiplies via repeated addition. */
+    public static int multiply(int a, int b) {
+        int result = 0;
+        for (int i = 0; i < b; i++) {
+            result = add(result, a);
+        }
+        return result;
+    }
+
+    /** Mutual recursion: delegates to isOdd. */
+    public static boolean isEven(int n) {
+        if (n == 0) return true;
+        return isOdd(n - 1);
+    }
+
+    /** Mutual recursion: delegates to isEven. */
+    public static boolean isOdd(int n) {
+        if (n == 0) return false;
+        return isEven(n - 1);
+    }
+}
+```
+
+Documentation: Math helpers for the SCIP extractor golden test.
+
+Methods:
+- `public Math()`
+- `public static int add(int a, int b)` — Adds two numbers.
+- `public static int multiply(int a, int b)` — Multiplies via repeated addition.
+- `public static boolean isEven(int n)` — Mutual recursion: delegates to isOdd.
+- `public static boolean isOdd(int n)` — Mutual recursion: delegates to isEven.
+
+Analyze this class and respond with JSON in this exact format:
+{
+  "purpose": "One sentence: what this class represents, from a caller's perspective",
+  "behavior": "Lifecycle, mutability, and how instances behave across method calls",
+  "invariants": ["invariants that hold across all method calls"],
+  "security": ["security-relevant state, contracts, or data this type is responsible for"]
+}
+
+Field guidance:
+- purpose: describe the concept the type models, not the syntactic shape (e.g. "a thread-safe counter", not "a struct with an int field")
+- behavior: lifetime, mutability, thread-safety, cloneability, and any state transitions enforced by the methods
+- invariants: conditions the type guarantees to hold between method calls (e.g. "value is always non-negative"); empty array if none apply
+- security: sensitive data held, trust boundaries crossed, validation responsibilities; empty array if nothing security-relevant applies
+
+== prompt 3 :: unit=maven/com.example/java-example/example.(Counter).<init> :: pass=summary ==
+You are analyzing a Java function to create a summary of its behavior.
+
+```
+    public Counter() {
+        this.n = 0;
+    }
+```
+
+## Receiver Type: class Counter
+Counter accumulates a running total.
+
+```
+public class Counter {
+    private int n;
+
+    /** Creates a zeroed counter. */
+    public Counter() {
+        this.n = 0;
+    }
+
+    /** Increments by one, returns the new value. */
+    public int bump() {
+        this.n = Math.add(this.n, 1);
+        return this.n;
+    }
+
+    /** Returns the current value. */
+    public int value() {
+        return this.n;
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `public int bump()` — Increments by one, returns the new value.
+- `public int value()` — Returns the current value.
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 4 :: unit=maven/com.example/java-example/example.(Counter).<init> :: pass=baseline ==
+You are reviewing Java code for logical correctness.
+
+```
+    public Counter() {
+        this.n = 0;
+    }
+```
+
+## Receiver Type: class Counter
+Counter accumulates a running total.
+
+```
+public class Counter {
+    private int n;
+
+    /** Creates a zeroed counter. */
+    public Counter() {
+        this.n = 0;
+    }
+
+    /** Increments by one, returns the new value. */
+    public int bump() {
+        this.n = Math.add(this.n, 1);
+        return this.n;
+    }
+
+    /** Returns the current value. */
+    public int value() {
+        return this.n;
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `public int bump()` — Increments by one, returns the new value.
+- `public int value()` — Returns the current value.
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 5 :: unit=maven/com.example/java-example/example.(Math).add :: pass=summary ==
+You are analyzing a Java function to create a summary of its behavior.
+
+```
+    public static int add(int a, int b) {
+        return a + b;
+    }
+```
+
+## Receiver Type: class Math
+Math helpers for the SCIP extractor golden test.
+
+```
+public class Math {
+    /** Adds two numbers. */
+    public static int add(int a, int b) {
+        return a + b;
+    }
+
+    /** Multiplies via repeated addition. */
+    public static int multiply(int a, int b) {
+        int result = 0;
+        for (int i = 0; i < b; i++) {
+            result = add(result, a);
+        }
+        return result;
+    }
+
+    /** Mutual recursion: delegates to isOdd. */
+    public static boolean isEven(int n) {
+        if (n == 0) return true;
+        return isOdd(n - 1);
+    }
+
+    /** Mutual recursion: delegates to isEven. */
+    public static boolean isOdd(int n) {
+        if (n == 0) return false;
+        return isEven(n - 1);
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Math:
+- `public Math()`
+- `public static int multiply(int a, int b)` — Multiplies via repeated addition.
+- `public static boolean isEven(int n)` — Mutual recursion: delegates to isOdd.
+- `public static boolean isOdd(int n)` — Mutual recursion: delegates to isEven.
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 6 :: unit=maven/com.example/java-example/example.(Math).add :: pass=baseline ==
+You are reviewing Java code for logical correctness.
+
+```
+    public static int add(int a, int b) {
+        return a + b;
+    }
+```
+
+## Receiver Type: class Math
+Math helpers for the SCIP extractor golden test.
+
+```
+public class Math {
+    /** Adds two numbers. */
+    public static int add(int a, int b) {
+        return a + b;
+    }
+
+    /** Multiplies via repeated addition. */
+    public static int multiply(int a, int b) {
+        int result = 0;
+        for (int i = 0; i < b; i++) {
+            result = add(result, a);
+        }
+        return result;
+    }
+
+    /** Mutual recursion: delegates to isOdd. */
+    public static boolean isEven(int n) {
+        if (n == 0) return true;
+        return isOdd(n - 1);
+    }
+
+    /** Mutual recursion: delegates to isEven. */
+    public static boolean isOdd(int n) {
+        if (n == 0) return false;
+        return isEven(n - 1);
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Math:
+- `public Math()`
+- `public static int multiply(int a, int b)` — Multiplies via repeated addition.
+- `public static boolean isEven(int n)` — Mutual recursion: delegates to isOdd.
+- `public static boolean isOdd(int n)` — Mutual recursion: delegates to isEven.
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 7 :: unit=maven/com.example/java-example/example.(Counter).bump :: pass=summary ==
+You are analyzing a Java function to create a summary of its behavior.
+
+```
+    public int bump() {
+        this.n = Math.add(this.n, 1);
+        return this.n;
+    }
+```
+
+## Receiver Type: class Counter
+Counter accumulates a running total.
+
+```
+public class Counter {
+    private int n;
+
+    /** Creates a zeroed counter. */
+    public Counter() {
+        this.n = 0;
+    }
+
+    /** Increments by one, returns the new value. */
+    public int bump() {
+        this.n = Math.add(this.n, 1);
+        return this.n;
+    }
+
+    /** Returns the current value. */
+    public int value() {
+        return this.n;
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `public Counter()` — Creates a zeroed counter.
+- `public int value()` — Returns the current value.
+
+## Called Functions
+
+### maven/com.example/java-example/example.(Math).add
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 8 :: unit=maven/com.example/java-example/example.(Counter).bump :: pass=baseline ==
+You are reviewing Java code for logical correctness.
+
+```
+    public int bump() {
+        this.n = Math.add(this.n, 1);
+        return this.n;
+    }
+```
+
+## Receiver Type: class Counter
+Counter accumulates a running total.
+
+```
+public class Counter {
+    private int n;
+
+    /** Creates a zeroed counter. */
+    public Counter() {
+        this.n = 0;
+    }
+
+    /** Increments by one, returns the new value. */
+    public int bump() {
+        this.n = Math.add(this.n, 1);
+        return this.n;
+    }
+
+    /** Returns the current value. */
+    public int value() {
+        return this.n;
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `public Counter()` — Creates a zeroed counter.
+- `public int value()` — Returns the current value.
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 9 :: unit=maven/com.example/java-example/example.(Counter).value :: pass=summary ==
+You are analyzing a Java function to create a summary of its behavior.
+
+```
+    public int value() {
+        return this.n;
+    }
+```
+
+## Receiver Type: class Counter
+Counter accumulates a running total.
+
+```
+public class Counter {
+    private int n;
+
+    /** Creates a zeroed counter. */
+    public Counter() {
+        this.n = 0;
+    }
+
+    /** Increments by one, returns the new value. */
+    public int bump() {
+        this.n = Math.add(this.n, 1);
+        return this.n;
+    }
+
+    /** Returns the current value. */
+    public int value() {
+        return this.n;
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `public Counter()` — Creates a zeroed counter.
+- `public int bump()` — Increments by one, returns the new value.
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 10 :: unit=maven/com.example/java-example/example.(Counter).value :: pass=baseline ==
+You are reviewing Java code for logical correctness.
+
+```
+    public int value() {
+        return this.n;
+    }
+```
+
+## Receiver Type: class Counter
+Counter accumulates a running total.
+
+```
+public class Counter {
+    private int n;
+
+    /** Creates a zeroed counter. */
+    public Counter() {
+        this.n = 0;
+    }
+
+    /** Increments by one, returns the new value. */
+    public int bump() {
+        this.n = Math.add(this.n, 1);
+        return this.n;
+    }
+
+    /** Returns the current value. */
+    public int value() {
+        return this.n;
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Counter:
+- `public Counter()` — Creates a zeroed counter.
+- `public int bump()` — Increments by one, returns the new value.
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 11 :: unit=maven/com.example/java-example/example.(Main).<init> :: pass=summary ==
+You are analyzing a Java function to create a summary of its behavior.
+
+```
+public class Main {
+```
+
+## Receiver Type: class Main
+Entry point.
+
+```
+public class Main {
+    public static void main(String[] args) {
+        int sum = Math.add(1, 2);
+        int product = Math.multiply(3, 4);
+        System.out.println(sum + " " + product);
+
+        Counter c = new Counter();
+        c.bump();
+        System.out.println(c.value());
+
+        System.out.println(Math.isEven(42));
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Main:
+- `public static void main(String[] args)`
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 12 :: unit=maven/com.example/java-example/example.(Main).<init> :: pass=baseline ==
+You are reviewing Java code for logical correctness.
+
+```
+public class Main {
+```
+
+## Receiver Type: class Main
+Entry point.
+
+```
+public class Main {
+    public static void main(String[] args) {
+        int sum = Math.add(1, 2);
+        int product = Math.multiply(3, 4);
+        System.out.println(sum + " " + product);
+
+        Counter c = new Counter();
+        c.bump();
+        System.out.println(c.value());
+
+        System.out.println(Math.isEven(42));
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Main:
+- `public static void main(String[] args)`
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 13 :: unit=maven/com.example/java-example/example.(Math).multiply :: pass=summary ==
+You are analyzing a Java function to create a summary of its behavior.
+
+```
+    public static int multiply(int a, int b) {
+        int result = 0;
+        for (int i = 0; i < b; i++) {
+            result = add(result, a);
+        }
+        return result;
+    }
+```
+
+## Receiver Type: class Math
+Math helpers for the SCIP extractor golden test.
+
+```
+public class Math {
+    /** Adds two numbers. */
+    public static int add(int a, int b) {
+        return a + b;
+    }
+
+    /** Multiplies via repeated addition. */
+    public static int multiply(int a, int b) {
+        int result = 0;
+        for (int i = 0; i < b; i++) {
+            result = add(result, a);
+        }
+        return result;
+    }
+
+    /** Mutual recursion: delegates to isOdd. */
+    public static boolean isEven(int n) {
+        if (n == 0) return true;
+        return isOdd(n - 1);
+    }
+
+    /** Mutual recursion: delegates to isEven. */
+    public static boolean isOdd(int n) {
+        if (n == 0) return false;
+        return isEven(n - 1);
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Math:
+- `public Math()`
+- `public static int add(int a, int b)` — Adds two numbers.
+- `public static boolean isEven(int n)` — Mutual recursion: delegates to isOdd.
+- `public static boolean isOdd(int n)` — Mutual recursion: delegates to isEven.
+
+## Called Functions
+
+### maven/com.example/java-example/example.(Math).add
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 14 :: unit=maven/com.example/java-example/example.(Math).multiply :: pass=baseline ==
+You are reviewing Java code for logical correctness.
+
+```
+    public static int multiply(int a, int b) {
+        int result = 0;
+        for (int i = 0; i < b; i++) {
+            result = add(result, a);
+        }
+        return result;
+    }
+```
+
+## Receiver Type: class Math
+Math helpers for the SCIP extractor golden test.
+
+```
+public class Math {
+    /** Adds two numbers. */
+    public static int add(int a, int b) {
+        return a + b;
+    }
+
+    /** Multiplies via repeated addition. */
+    public static int multiply(int a, int b) {
+        int result = 0;
+        for (int i = 0; i < b; i++) {
+            result = add(result, a);
+        }
+        return result;
+    }
+
+    /** Mutual recursion: delegates to isOdd. */
+    public static boolean isEven(int n) {
+        if (n == 0) return true;
+        return isOdd(n - 1);
+    }
+
+    /** Mutual recursion: delegates to isEven. */
+    public static boolean isOdd(int n) {
+        if (n == 0) return false;
+        return isEven(n - 1);
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Math:
+- `public Math()`
+- `public static int add(int a, int b)` — Adds two numbers.
+- `public static boolean isEven(int n)` — Mutual recursion: delegates to isOdd.
+- `public static boolean isOdd(int n)` — Mutual recursion: delegates to isEven.
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 15 :: unit=maven/com.example/java-example/example.(Math).isEven+maven/com.example/java-example/example.(Math).isOdd :: pass=summary ==
+You are analyzing a Java function to create a summary of its behavior.
+
+
+## Functions (mutually recursive group)
+
+```
+    public static boolean isEven(int n) {
+        if (n == 0) return true;
+        return isOdd(n - 1);
+    }
+```
+
+```
+    public static boolean isOdd(int n) {
+        if (n == 0) return false;
+        return isEven(n - 1);
+    }
+```
+
+
+## Receiver Type: class Math
+Math helpers for the SCIP extractor golden test.
+
+```
+public class Math {
+    /** Adds two numbers. */
+    public static int add(int a, int b) {
+        return a + b;
+    }
+
+    /** Multiplies via repeated addition. */
+    public static int multiply(int a, int b) {
+        int result = 0;
+        for (int i = 0; i < b; i++) {
+            result = add(result, a);
+        }
+        return result;
+    }
+
+    /** Mutual recursion: delegates to isOdd. */
+    public static boolean isEven(int n) {
+        if (n == 0) return true;
+        return isOdd(n - 1);
+    }
+
+    /** Mutual recursion: delegates to isEven. */
+    public static boolean isOdd(int n) {
+        if (n == 0) return false;
+        return isEven(n - 1);
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Math:
+- `public Math()`
+- `public static int add(int a, int b)` — Adds two numbers.
+- `public static int multiply(int a, int b)` — Multiplies via repeated addition.
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 16 :: unit=maven/com.example/java-example/example.(Math).isEven+maven/com.example/java-example/example.(Math).isOdd :: pass=baseline ==
+You are reviewing Java code for logical correctness.
+
+
+## Functions (mutually recursive group)
+
+```
+    public static boolean isEven(int n) {
+        if (n == 0) return true;
+        return isOdd(n - 1);
+    }
+```
+
+```
+    public static boolean isOdd(int n) {
+        if (n == 0) return false;
+        return isEven(n - 1);
+    }
+```
+
+
+## Receiver Type: class Math
+Math helpers for the SCIP extractor golden test.
+
+```
+public class Math {
+    /** Adds two numbers. */
+    public static int add(int a, int b) {
+        return a + b;
+    }
+
+    /** Multiplies via repeated addition. */
+    public static int multiply(int a, int b) {
+        int result = 0;
+        for (int i = 0; i < b; i++) {
+            result = add(result, a);
+        }
+        return result;
+    }
+
+    /** Mutual recursion: delegates to isOdd. */
+    public static boolean isEven(int n) {
+        if (n == 0) return true;
+        return isOdd(n - 1);
+    }
+
+    /** Mutual recursion: delegates to isEven. */
+    public static boolean isOdd(int n) {
+        if (n == 0) return false;
+        return isEven(n - 1);
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Math:
+- `public Math()`
+- `public static int add(int a, int b)` — Adds two numbers.
+- `public static int multiply(int a, int b)` — Multiplies via repeated addition.
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 17 :: unit=maven/com.example/java-example/example.(Main).main :: pass=summary ==
+You are analyzing a Java function to create a summary of its behavior.
+
+```
+    public static void main(String[] args) {
+        int sum = Math.add(1, 2);
+        int product = Math.multiply(3, 4);
+        System.out.println(sum + " " + product);
+
+        Counter c = new Counter();
+        c.bump();
+        System.out.println(c.value());
+
+        System.out.println(Math.isEven(42));
+    }
+```
+
+## Receiver Type: class Main
+Entry point.
+
+```
+public class Main {
+    public static void main(String[] args) {
+        int sum = Math.add(1, 2);
+        int product = Math.multiply(3, 4);
+        System.out.println(sum + " " + product);
+
+        Counter c = new Counter();
+        c.bump();
+        System.out.println(c.value());
+
+        System.out.println(Math.isEven(42));
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Main:
+- `public Main()`
+
+## Called Functions
+
+### maven/com.example/java-example/example.(Math).add
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+### maven/com.example/java-example/example.(Math).multiply
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+### maven/com.example/java-example/example.(Counter).<init>
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+### maven/com.example/java-example/example.(Counter).bump
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+### maven/com.example/java-example/example.(Counter).value
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+### maven/com.example/java-example/example.(Math).isEven+maven/com.example/java-example/example.(Math).isOdd
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+## External Functions Used
+
+### jdk/java/io.println
+Signature: 
+
+### jdk/java/io.println
+Signature: 
+
+### jdk/java/io.println
+Signature: 
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 18 :: unit=maven/com.example/java-example/example.(Main).main :: pass=baseline ==
+You are reviewing Java code for logical correctness.
+
+```
+    public static void main(String[] args) {
+        int sum = Math.add(1, 2);
+        int product = Math.multiply(3, 4);
+        System.out.println(sum + " " + product);
+
+        Counter c = new Counter();
+        c.bump();
+        System.out.println(c.value());
+
+        System.out.println(Math.isEven(42));
+    }
+```
+
+## Receiver Type: class Main
+Entry point.
+
+```
+public class Main {
+    public static void main(String[] args) {
+        int sum = Math.add(1, 2);
+        int product = Math.multiply(3, 4);
+        System.out.println(sum + " " + product);
+
+        Counter c = new Counter();
+        c.bump();
+        System.out.println(c.value());
+
+        System.out.println(Math.isEven(42));
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Main:
+- `public Main()`
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
+== prompt 19 :: unit=maven/com.example/java-example/example.(Math).<init> :: pass=summary ==
+You are analyzing a Java function to create a summary of its behavior.
+
+```
+public class Math {
+    /** Adds two numbers. */
+```
+
+## Receiver Type: class Math
+Math helpers for the SCIP extractor golden test.
+
+```
+public class Math {
+    /** Adds two numbers. */
+    public static int add(int a, int b) {
+        return a + b;
+    }
+
+    /** Multiplies via repeated addition. */
+    public static int multiply(int a, int b) {
+        int result = 0;
+        for (int i = 0; i < b; i++) {
+            result = add(result, a);
+        }
+        return result;
+    }
+
+    /** Mutual recursion: delegates to isOdd. */
+    public static boolean isEven(int n) {
+        if (n == 0) return true;
+        return isOdd(n - 1);
+    }
+
+    /** Mutual recursion: delegates to isEven. */
+    public static boolean isOdd(int n) {
+        if (n == 0) return false;
+        return isEven(n - 1);
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Math:
+- `public static int add(int a, int b)` — Adds two numbers.
+- `public static int multiply(int a, int b)` — Multiplies via repeated addition.
+- `public static boolean isEven(int n)` — Mutual recursion: delegates to isOdd.
+- `public static boolean isOdd(int n)` — Mutual recursion: delegates to isEven.
+
+Analyze this function and respond with JSON in this exact format:
+{
+  "purpose": "One sentence describing what this function does",
+  "behavior": "How it behaves - side effects, return conditions, error cases",
+  "invariants": ["preconditions", "postconditions", "guarantees"],
+  "security": ["security-relevant properties for callers to know"]
+}
+
+Field guidance:
+- purpose: one sentence from the caller's perspective — what the function does, not how; do not restate the function name
+- behavior: edge cases, side effects, non-obvious return value semantics, and error conditions; do not repeat the happy path already captured in purpose
+- invariants: observable contracts — preconditions the caller must satisfy (e.g. "input must be non-empty"), postconditions guaranteed on success (e.g. "returned pointer is never nil"), and invariants that always hold; use an empty array if none apply
+- security: include only if security-relevant: whether inputs are validated or sanitized, whether authentication or authorization is enforced, whether sensitive data is handled, whether output is escaped; use an empty array if nothing security-relevant applies
+
+== prompt 20 :: unit=maven/com.example/java-example/example.(Math).<init> :: pass=baseline ==
+You are reviewing Java code for logical correctness.
+
+```
+public class Math {
+    /** Adds two numbers. */
+```
+
+## Receiver Type: class Math
+Math helpers for the SCIP extractor golden test.
+
+```
+public class Math {
+    /** Adds two numbers. */
+    public static int add(int a, int b) {
+        return a + b;
+    }
+
+    /** Multiplies via repeated addition. */
+    public static int multiply(int a, int b) {
+        int result = 0;
+        for (int i = 0; i < b; i++) {
+            result = add(result, a);
+        }
+        return result;
+    }
+
+    /** Mutual recursion: delegates to isOdd. */
+    public static boolean isEven(int n) {
+        if (n == 0) return true;
+        return isOdd(n - 1);
+    }
+
+    /** Mutual recursion: delegates to isEven. */
+    public static boolean isOdd(int n) {
+        if (n == 0) return false;
+        return isEven(n - 1);
+    }
+}
+```
+
+Purpose: test type purpose
+Behavior: test type behavior
+Type invariants:
+- test type invariant
+
+Other methods on Math:
+- `public static int add(int a, int b)` — Adds two numbers.
+- `public static int multiply(int a, int b)` — Multiplies via repeated addition.
+- `public static boolean isEven(int n)` — Mutual recursion: delegates to isOdd.
+- `public static boolean isOdd(int n)` — Mutual recursion: delegates to isEven.
+
+## Function Summary
+Purpose: test purpose
+Behavior: test behavior
+Invariants:
+- test invariant
+
+Does this function correctly implement what it claims to do? Look for:
+
+Implementation vs. Intent:
+- Behavior that contradicts the declared purpose, invariants, or documented error conditions
+- A code path that returns success when it should return an error, or vice versa
+- A precondition stated in the summary that the implementation does not actually enforce
+
+Logic Errors:
+- Inverted boolean conditions (== where != is needed, < where > is needed)
+- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
+- Off-by-one errors in loop bounds, index expressions, or size calculations
+- Unreachable code following an unconditional return, panic, or continue
+- A switch or if-else chain that silently omits a case that must be handled
+- Integer overflow or underflow in arithmetic that is not guarded
+
+Control Flow:
+- A loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition logic
+- Error path that falls through to success-path code
+
+Severity scale: "critical" = exploitable security flaw or data corruption; "high" = incorrect behavior in normal use; "medium" = incorrect in edge cases or degraded reliability; "low" = poor practice with high probability of causing future bugs; "info" = minor concern.
+
+Respond with JSON. The "line" field must be the line number. The "code" field must contain the exact line of code where the issue occurs, copied verbatim from the code block above.
+
+Example:
+{"issues": [{"function": "ParseConfig", "line": 42, "code": "	query := \"SELECT * FROM users WHERE id=\" + id", "severity": "critical", "message": "SQL injection via string concatenation", "suggestion": "Use parameterized query"}]}
+
+If no issues found, return {"issues": []}.
+
