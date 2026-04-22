@@ -33,6 +33,7 @@ var updatePipelineGoldens = flag.Bool("update-scip-pipeline", false,
 func TestPipelineGolden_SCIP(t *testing.T) {
 	fixtures := []string{
 		"cmake-example",
+		"go-example",
 		"rust-example",
 		"typescript-example",
 	}
