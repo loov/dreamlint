@@ -117,6 +117,82 @@ func TestBuildFunctionInfo(t *testing.T) {
 	}
 }
 
+func TestReceiverName(t *testing.T) {
+	cases := []struct {
+		name string
+		desc []*scip.Descriptor
+		want string
+	}{
+		{
+			name: "simple method",
+			desc: []*scip.Descriptor{
+				{Name: "Foo", Suffix: scip.Descriptor_Type},
+				{Name: "bar", Suffix: scip.Descriptor_Method},
+			},
+			want: "Foo",
+		},
+		{
+			name: "free function",
+			desc: []*scip.Descriptor{
+				{Name: "ns", Suffix: scip.Descriptor_Namespace},
+				{Name: "bar", Suffix: scip.Descriptor_Method},
+			},
+			want: "",
+		},
+		{
+			name: "rust-analyzer impl",
+			desc: []*scip.Descriptor{
+				{Name: "impl", Suffix: scip.Descriptor_Type},
+				{Name: "Counter", Suffix: scip.Descriptor_TypeParameter},
+				{Name: "bump", Suffix: scip.Descriptor_Method},
+			},
+			want: "Counter",
+		},
+		{
+			name: "rust trait impl (impl Default for Counter)",
+			desc: []*scip.Descriptor{
+				{Name: "impl", Suffix: scip.Descriptor_Type},
+				{Name: "Counter", Suffix: scip.Descriptor_TypeParameter},
+				{Name: "Default", Suffix: scip.Descriptor_TypeParameter},
+				{Name: "fmt", Suffix: scip.Descriptor_Method},
+			},
+			want: "Counter",
+		},
+		{
+			name: "generic TS class Counter<T>",
+			desc: []*scip.Descriptor{
+				{Name: "Counter", Suffix: scip.Descriptor_Type},
+				{Name: "T", Suffix: scip.Descriptor_TypeParameter},
+				{Name: "increment", Suffix: scip.Descriptor_Method},
+			},
+			want: "Counter",
+		},
+		{
+			name: "generic Rust struct Foo<T,U>",
+			desc: []*scip.Descriptor{
+				{Name: "impl", Suffix: scip.Descriptor_Type},
+				{Name: "Foo", Suffix: scip.Descriptor_TypeParameter},
+				{Name: "process", Suffix: scip.Descriptor_Method},
+			},
+			want: "Foo",
+		},
+		{
+			name: "single descriptor (no receiver possible)",
+			desc: []*scip.Descriptor{
+				{Name: "main", Suffix: scip.Descriptor_Method},
+			},
+			want: "",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := receiverName(tc.desc); got != tc.want {
+				t.Errorf("receiverName() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestPackageName_NestedClasses(t *testing.T) {
 	cases := []struct {
 		name    string
