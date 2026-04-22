@@ -513,3 +513,158 @@ func TestExtract_ShortRangeArray(t *testing.T) {
 	}
 	_ = res
 }
+
+// TestExtract_MultiDocCrossModule exercises the multi-document path:
+// a type defined in one file, a method in another, and a free function
+// in a third file that calls the method. This verifies that the
+// callgraph, type-method linking, and body extraction all work when
+// symbols span multiple documents.
+func TestExtract_MultiDocCrossModule(t *testing.T) {
+	dir := t.TempDir()
+
+	// types.rs: defines Counter struct
+	typesRel := "src/types.rs"
+	typesAbs := filepath.Join(dir, typesRel)
+	if err := os.MkdirAll(filepath.Dir(typesAbs), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(typesAbs, []byte("pub struct Counter {\n    n: i32,\n}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// impl.rs: defines Counter::bump method
+	implRel := "src/impl.rs"
+	implAbs := filepath.Join(dir, implRel)
+	if err := os.WriteFile(implAbs, []byte("impl Counter {\n    pub fn bump(&mut self) -> i32 {\n        self.n += 1;\n        self.n\n    }\n}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// main.rs: calls Counter::bump
+	mainRel := "src/main.rs"
+	mainAbs := filepath.Join(dir, mainRel)
+	if err := os.WriteFile(mainAbs, []byte("fn main() {\n    let mut c = Counter { n: 0 };\n    c.bump();\n}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	counterSym := "rust-analyzer cargo example 0.1.0 Counter#"
+	bumpSym := "rust-analyzer cargo example 0.1.0 Counter#bump()."
+	mainSym := "rust-analyzer cargo example 0.1.0 main()."
+
+	index := &scip.Index{
+		Metadata: &scip.Metadata{ProjectRoot: "file://" + dir},
+		Documents: []*scip.Document{
+			{
+				Language:     "Rust",
+				RelativePath: typesRel,
+				Symbols: []*scip.SymbolInformation{
+					{Symbol: counterSym, Kind: scip.SymbolInformation_Struct, DisplayName: "Counter"},
+				},
+				Occurrences: []*scip.Occurrence{
+					{
+						Symbol:         counterSym,
+						Range:          []int32{0, 11, 0, 18},
+						EnclosingRange: []int32{0, 0, 2, 1},
+						SymbolRoles:    int32(scip.SymbolRole_Definition),
+					},
+				},
+			},
+			{
+				Language:     "Rust",
+				RelativePath: implRel,
+				Symbols: []*scip.SymbolInformation{
+					{Symbol: bumpSym, Kind: scip.SymbolInformation_Method, DisplayName: "bump"},
+				},
+				Occurrences: []*scip.Occurrence{
+					{
+						Symbol:         bumpSym,
+						Range:          []int32{1, 11, 1, 15},
+						EnclosingRange: []int32{1, 4, 4, 5},
+						SymbolRoles:    int32(scip.SymbolRole_Definition),
+					},
+				},
+			},
+			{
+				Language:     "Rust",
+				RelativePath: mainRel,
+				Symbols: []*scip.SymbolInformation{
+					{Symbol: mainSym, Kind: scip.SymbolInformation_Function, DisplayName: "main"},
+				},
+				Occurrences: []*scip.Occurrence{
+					{
+						Symbol:         mainSym,
+						Range:          []int32{0, 3, 0, 7},
+						EnclosingRange: []int32{0, 0, 3, 1},
+						SymbolRoles:    int32(scip.SymbolRole_Definition),
+					},
+					// main references bump on line 2
+					{
+						Symbol:      bumpSym,
+						Range:       []int32{2, 6, 2, 10},
+						SymbolRoles: int32(scip.SymbolRole_ReadAccess),
+					},
+				},
+			},
+		},
+	}
+
+	idxPath := writeIndex(t, dir, index)
+	ex := &Extractor{IndexPath: idxPath}
+	res, err := ex.Extract(context.Background())
+	if err != nil {
+		t.Fatalf("Extract: %v", err)
+	}
+
+	// Type defined in types.rs should be linked to method in impl.rs.
+	ti, ok := res.Types["example.Counter"]
+	if !ok {
+		keys := make([]string, 0, len(res.Types))
+		for k := range res.Types {
+			keys = append(keys, k)
+		}
+		t.Fatalf("Counter type missing; got %v", keys)
+	}
+	if ti.Body == "" {
+		t.Error("Counter body is empty")
+	}
+	if len(ti.Methods) != 1 {
+		t.Errorf("Counter.Methods = %v, want 1 entry", ti.Methods)
+	}
+
+	// bump method should have ReceiverType linking back.
+	var bumpFn *extractFunctionInfoView
+	for _, u := range res.Units {
+		for _, fn := range u.Functions {
+			if fn.Name == "bump" {
+				bumpFn = &extractFunctionInfoView{Receiver: fn.Receiver, ReceiverType: fn.ReceiverType}
+			}
+		}
+	}
+	if bumpFn == nil {
+		t.Fatal("bump not found in units")
+	}
+	if bumpFn.ReceiverType != "example.Counter" {
+		t.Errorf("bump.ReceiverType = %q, want example.Counter", bumpFn.ReceiverType)
+	}
+
+	// main should call bump (cross-document edge).
+	var mainUnit *struct{ callees []string }
+	for _, u := range res.Units {
+		for _, fn := range u.Functions {
+			if fn.Name == "main" {
+				mainUnit = &struct{ callees []string }{callees: u.Callees}
+			}
+		}
+	}
+	if mainUnit == nil {
+		t.Fatal("main unit not found")
+	}
+	foundBumpCallee := false
+	for _, c := range mainUnit.callees {
+		if c == "example.(Counter).bump" {
+			foundBumpCallee = true
+		}
+	}
+	if !foundBumpCallee {
+		t.Errorf("main.Callees = %v, want to contain bump", mainUnit.callees)
+	}
+}
