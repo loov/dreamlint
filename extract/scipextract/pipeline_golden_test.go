@@ -35,6 +35,7 @@ func TestPipelineGolden_SCIP(t *testing.T) {
 		"cmake-example",
 		"go-example",
 		"java-example",
+		"python-example",
 		"rust-example",
 		"typescript-example",
 	}
