@@ -56,6 +56,8 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 
 	src := newSourceCache(root)
 
+	var warnings []string
+
 	// Pass 1: identify function and type symbols and assign ids. No body
 	// extraction yet — we need the per-doc definition ranges (computed in
 	// pass 2) before we can pick the right span for each function/type.
@@ -83,6 +85,7 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 			switch {
 			case isFunctionSymbol(sym):
 				if _, dup := symbolToID[sym.Symbol]; dup {
+					warnings = append(warnings, fmt.Sprintf("duplicate function symbol %s in %s (first wins)", sym.Symbol, doc.RelativePath))
 					continue
 				}
 				fn := buildFunctionInfo(sym, doc, absPath)
@@ -94,6 +97,7 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 				funcs = append(funcs, fn)
 			case isTypeSymbol(sym):
 				if _, dup := typesBySymbol[sym.Symbol]; dup {
+					warnings = append(warnings, fmt.Sprintf("duplicate type symbol %s in %s (first wins)", sym.Symbol, doc.RelativePath))
 					continue
 				}
 				ti := buildTypeInfo(sym, doc, absPath)
@@ -117,7 +121,6 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 
 	// Pass 3: bodies use the shared ranges so indexers without
 	// EnclosingRange (e.g. scip-clang) still get useful function bodies.
-	var warnings []string
 	for _, e := range fnEntries {
 		body, warn := extractBody(e.info, e.doc, e.absPath, docRanges[e.doc], src)
 		e.fn.Body = body
