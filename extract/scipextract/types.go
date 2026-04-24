@@ -120,7 +120,15 @@ func buildTypeInfo(info *scip.SymbolInformation, doc *scip.Document, absPath str
 // Matches the receiver-linking convention used in FunctionInfo and the
 // unit ID builder.
 func typeID(t *extract.TypeInfo) string {
-	return t.Package + "." + t.Name
+	return receiverKey(t.Package, t.Name)
+}
+
+// receiverKey is the package-qualified identity used both to key types
+// and to link methods to their receivers. Keeping both call sites on
+// one helper prevents them from drifting (e.g. if the separator or
+// ordering ever needs to change).
+func receiverKey(pkg, name string) string {
+	return pkg + "." + name
 }
 
 // typeDefinitionRanges returns a per-symbol range that covers each

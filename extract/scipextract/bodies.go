@@ -58,15 +58,21 @@ func extractBody(info *scip.SymbolInformation, doc *scip.Document, absPath strin
 }
 
 // findDefinition returns the first occurrence of symbol in doc with the
-// Definition role set.
+// Definition role set and a well-formed Range. Occurrences with malformed
+// Ranges are skipped so callers can rely on scip.NewRange(occ.Range)
+// succeeding.
 func findDefinition(symbol string, doc *scip.Document) *scip.Occurrence {
 	for _, occ := range doc.Occurrences {
 		if occ.Symbol != symbol {
 			continue
 		}
-		if occ.SymbolRoles&int32(scip.SymbolRole_Definition) != 0 {
-			return occ
+		if occ.SymbolRoles&int32(scip.SymbolRole_Definition) == 0 {
+			continue
 		}
+		if _, err := scip.NewRange(occ.Range); err != nil {
+			continue
+		}
+		return occ
 	}
 	return nil
 }

@@ -173,22 +173,14 @@ func packageName(sym *scip.Symbol) string {
 // definitionPosition finds the first occurrence of sym in doc with the
 // Definition role and converts it to a 1-based token.Position.
 func definitionPosition(symbol string, doc *scip.Document, absPath string) token.Position {
-	for _, occ := range doc.Occurrences {
-		if occ.Symbol != symbol {
-			continue
-		}
-		if occ.SymbolRoles&int32(scip.SymbolRole_Definition) == 0 {
-			continue
-		}
-		r, err := scip.NewRange(occ.Range)
-		if err != nil {
-			continue
-		}
-		return token.Position{
-			Filename: absPath,
-			Line:     int(r.Start.Line) + 1,
-			Column:   int(r.Start.Character) + 1,
-		}
+	occ := findDefinition(symbol, doc)
+	if occ == nil {
+		return token.Position{Filename: absPath}
 	}
-	return token.Position{Filename: absPath}
+	r, _ := scip.NewRange(occ.Range)
+	return token.Position{
+		Filename: absPath,
+		Line:     int(r.Start.Line) + 1,
+		Column:   int(r.Start.Character) + 1,
+	}
 }

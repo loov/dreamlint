@@ -143,7 +143,7 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 		if fn.Receiver == "" {
 			continue
 		}
-		id := fn.Package + "." + fn.Receiver
+		id := receiverKey(fn.Package, fn.Receiver)
 		ti, ok := types[id]
 		if !ok {
 			continue
