@@ -668,3 +668,93 @@ func TestExtract_MultiDocCrossModule(t *testing.T) {
 		t.Errorf("main.Callees = %v, want to contain bump", mainUnit.callees)
 	}
 }
+
+// TestExtract_PathFilterExcludesType verifies that when PathFilters
+// include a method's document but exclude the type's document, the
+// method is still extracted but its ReceiverType link is empty and the
+// type is absent from Result.Types.
+func TestExtract_PathFilterExcludesType(t *testing.T) {
+	dir := t.TempDir()
+
+	typesRel := "src/types.rs"
+	typesAbs := filepath.Join(dir, typesRel)
+	if err := os.MkdirAll(filepath.Dir(typesAbs), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(typesAbs, []byte("pub struct Counter {\n    n: i32,\n}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	implRel := "src/impl.rs"
+	implAbs := filepath.Join(dir, implRel)
+	if err := os.WriteFile(implAbs, []byte("impl Counter {\n    pub fn bump(&mut self) -> i32 {\n        self.n += 1;\n        self.n\n    }\n}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	counterSym := "rust-analyzer cargo example 0.1.0 Counter#"
+	bumpSym := "rust-analyzer cargo example 0.1.0 Counter#bump()."
+
+	index := &scip.Index{
+		Metadata: &scip.Metadata{ProjectRoot: "file://" + dir},
+		Documents: []*scip.Document{
+			{
+				Language:     "Rust",
+				RelativePath: typesRel,
+				Symbols: []*scip.SymbolInformation{
+					{Symbol: counterSym, Kind: scip.SymbolInformation_Struct, DisplayName: "Counter"},
+				},
+				Occurrences: []*scip.Occurrence{
+					{
+						Symbol:         counterSym,
+						Range:          []int32{0, 11, 0, 18},
+						EnclosingRange: []int32{0, 0, 2, 1},
+						SymbolRoles:    int32(scip.SymbolRole_Definition),
+					},
+				},
+			},
+			{
+				Language:     "Rust",
+				RelativePath: implRel,
+				Symbols: []*scip.SymbolInformation{
+					{Symbol: bumpSym, Kind: scip.SymbolInformation_Method, DisplayName: "bump"},
+				},
+				Occurrences: []*scip.Occurrence{
+					{
+						Symbol:         bumpSym,
+						Range:          []int32{1, 11, 1, 15},
+						EnclosingRange: []int32{1, 4, 4, 5},
+						SymbolRoles:    int32(scip.SymbolRole_Definition),
+					},
+				},
+			},
+		},
+	}
+
+	idxPath := writeIndex(t, dir, index)
+	// Only include impl.rs — types.rs (and its Counter struct) are excluded.
+	ex := &Extractor{IndexPath: idxPath, PathFilters: []string{"src/impl.rs"}}
+	res, err := ex.Extract(context.Background())
+	if err != nil {
+		t.Fatalf("Extract: %v", err)
+	}
+
+	// Counter type should be absent.
+	if len(res.Types) != 0 {
+		t.Errorf("expected no types, got %v", res.Types)
+	}
+
+	// bump method should be extracted but unlinked.
+	if len(res.Units) != 1 {
+		t.Fatalf("got %d units, want 1", len(res.Units))
+	}
+	fn := res.Units[0].Functions[0]
+	if fn.Name != "bump" {
+		t.Errorf("Name = %q, want bump", fn.Name)
+	}
+	if fn.Receiver != "Counter" {
+		t.Errorf("Receiver = %q, want Counter", fn.Receiver)
+	}
+	if fn.ReceiverType != "" {
+		t.Errorf("ReceiverType = %q, want empty (type excluded by filter)", fn.ReceiverType)
+	}
+}
