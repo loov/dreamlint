@@ -88,6 +88,13 @@ func TestIsTypeSymbol(t *testing.T) {
 			info: &scip.SymbolInformation{},
 			want: false,
 		},
+		{
+			name: "parameter descriptor rejected",
+			info: &scip.SymbolInformation{
+				Symbol: "rust-analyzer cargo example 0.1.0 foo/bar().(x)",
+			},
+			want: false,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
