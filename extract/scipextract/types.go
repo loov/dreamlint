@@ -64,6 +64,8 @@ func kindString(kind scip.SymbolInformation_Kind) string {
 		return "protocol"
 	case scip.SymbolInformation_Union:
 		return "union"
+	case scip.SymbolInformation_TypeClass:
+		return "typeclass"
 	case scip.SymbolInformation_TypeAlias:
 		return "type"
 	}

@@ -166,6 +166,7 @@ func TestKindString(t *testing.T) {
 		scip.SymbolInformation_Interface: "interface",
 		scip.SymbolInformation_Trait:     "trait",
 		scip.SymbolInformation_Enum:      "enum",
+		scip.SymbolInformation_TypeClass: "typeclass",
 		scip.SymbolInformation_TypeAlias: "type",
 		scip.SymbolInformation_Function:  "type", // not a type kind → fallback
 	}
