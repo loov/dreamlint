@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -171,7 +172,7 @@ func renderPipelinePrompts(res *extract.Result, prompts []string) string {
 	for id := range res.Types {
 		typeIDs = append(typeIDs, id)
 	}
-	sortStrings(typeIDs)
+	slices.Sort(typeIDs)
 	for _, id := range typeIDs {
 		t := res.Types[id]
 		fmt.Fprintf(&b, "  %s (%s, methods=%v)\n", id, t.Kind, t.Methods)
@@ -182,7 +183,7 @@ func renderPipelinePrompts(res *extract.Result, prompts []string) string {
 	for id := range res.External {
 		extIDs = append(extIDs, id)
 	}
-	sortStrings(extIDs)
+	slices.Sort(extIDs)
 	for _, id := range extIDs {
 		e := res.External[id]
 		fmt.Fprintf(&b, "  %s::%s\n", e.Package, e.Name)
@@ -226,14 +227,4 @@ func renderPipelinePrompts(res *extract.Result, prompts []string) string {
 	return b.String()
 }
 
-// sortStrings sorts a slice in-place without pulling in the
-// stdlib sort package at every call site.
-func sortStrings(s []string) {
-	// Small inputs, insertion sort is fine.
-	for i := 1; i < len(s); i++ {
-		for j := i; j > 0 && s[j-1] > s[j]; j-- {
-			s[j-1], s[j] = s[j], s[j-1]
-		}
-	}
-}
 
