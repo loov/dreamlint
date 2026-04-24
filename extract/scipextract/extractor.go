@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/scip-code/scip/bindings/go/scip"
@@ -184,6 +184,33 @@ func filterDocuments(docs []*scip.Document, filters []string) []*scip.Document {
 	return out
 }
 
+// languageEntry describes one display language and every SCIP handle
+// that maps to it. The table below feeds three lookups (Document.Language
+// enum, indexer scheme, file extension) so adding a new language is a
+// one-spot change.
+type languageEntry struct {
+	Display    string
+	Schemes    []string // SCIP indexer schemes (sym.Scheme) producing this language
+	SCIPNames  []string // scip.Language enum strings, lowercased
+	Extensions []string // file extensions including leading dot, lowercased
+}
+
+var languageTable = []languageEntry{
+	{Display: "Go", Schemes: []string{"scip-go"}, SCIPNames: []string{"go"}, Extensions: []string{".go"}},
+	{Display: "Rust", Schemes: []string{"rust-analyzer"}, SCIPNames: []string{"rust"}, Extensions: []string{".rs"}},
+	{Display: "Java", Schemes: []string{"scip-java", "semanticdb"}, SCIPNames: []string{"java"}, Extensions: []string{".java"}},
+	{Display: "Kotlin", SCIPNames: []string{"kotlin"}, Extensions: []string{".kt", ".kts"}},
+	{Display: "Python", Schemes: []string{"scip-python"}, SCIPNames: []string{"python"}, Extensions: []string{".py"}},
+	{Display: "Ruby", Schemes: []string{"scip-ruby"}, SCIPNames: []string{"ruby"}, Extensions: []string{".rb"}},
+	{Display: "TypeScript", Schemes: []string{"scip-typescript"}, SCIPNames: []string{"typescript"}, Extensions: []string{".ts", ".tsx"}},
+	{Display: "JavaScript", SCIPNames: []string{"javascript"}, Extensions: []string{".js", ".jsx"}},
+	{Display: "C", SCIPNames: []string{"c"}, Extensions: []string{".c", ".h"}},
+	{Display: "C++", Schemes: []string{"scip-clang"}, SCIPNames: []string{"cpp"}, Extensions: []string{".cpp", ".cc", ".cxx", ".hpp", ".hxx"}},
+	{Display: "C#", SCIPNames: []string{"csharp"}},
+	{Display: "Objective-C", SCIPNames: []string{"objectivec"}, Extensions: []string{".m"}},
+	{Display: "Objective-C++", SCIPNames: []string{"objectivecpp"}, Extensions: []string{".mm"}},
+}
+
 // pickLanguage returns a display-friendly language name derived from the
 // most common Document.Language across the filtered documents. When the
 // indexer leaves Document.Language empty (scip-typescript, for example),
@@ -198,27 +225,12 @@ func pickLanguage(docs []*scip.Document) string {
 	if len(counts) == 0 {
 		return inferLanguageFromScheme(docs)
 	}
-	// Deterministic: pick the highest count, ties broken by name.
-	type kv struct {
-		lang  string
-		count int
-	}
-	entries := make([]kv, 0, len(counts))
-	for l, c := range counts {
-		entries = append(entries, kv{l, c})
-	}
-	sort.Slice(entries, func(i, j int) bool {
-		if entries[i].count != entries[j].count {
-			return entries[i].count > entries[j].count
-		}
-		return entries[i].lang < entries[j].lang
-	})
-	return displayLanguage(entries[0].lang)
+	return displayLanguage(mostCommon(counts))
 }
 
-// inferLanguageFromScheme maps the scheme of the first parseable symbol to
-// a display language. Falls back to guessing from file extensions when no
-// scheme is recognized. Best-effort — returns "" if nothing matches.
+// inferLanguageFromScheme returns the language for the first parseable
+// symbol whose scheme maps to an entry in languageTable. Falls back to
+// file-extension inference.
 func inferLanguageFromScheme(docs []*scip.Document) string {
 	for _, doc := range docs {
 		for _, info := range doc.Symbols {
@@ -226,21 +238,8 @@ func inferLanguageFromScheme(docs []*scip.Document) string {
 			if err != nil {
 				continue
 			}
-			switch sym.Scheme {
-			case "scip-typescript":
-				return "TypeScript"
-			case "scip-java", "semanticdb":
-				return "Java"
-			case "scip-python":
-				return "Python"
-			case "scip-ruby":
-				return "Ruby"
-			case "rust-analyzer":
-				return "Rust"
-			case "scip-go":
-				return "Go"
-			case "scip-clang":
-				return "C++"
+			if lang := schemeToLanguage(sym.Scheme); lang != "" {
+				return lang
 			}
 		}
 	}
@@ -258,81 +257,50 @@ func inferLanguageFromExtension(docs []*scip.Document) string {
 			counts[lang]++
 		}
 	}
-	if len(counts) == 0 {
-		return ""
-	}
+	return mostCommon(counts)
+}
+
+// mostCommon returns the key with the highest count. Ties are broken by
+// lexical order so the result is deterministic. Returns "" for empty
+// input.
+func mostCommon(counts map[string]int) string {
 	best, bestN := "", 0
-	for lang, n := range counts {
-		if n > bestN || (n == bestN && lang < best) {
-			best, bestN = lang, n
+	for k, n := range counts {
+		if n > bestN || (n == bestN && k < best) {
+			best, bestN = k, n
 		}
 	}
 	return best
 }
 
 func extToLanguage(ext string) string {
-	switch ext {
-	case ".go":
-		return "Go"
-	case ".rs":
-		return "Rust"
-	case ".java":
-		return "Java"
-	case ".kt", ".kts":
-		return "Kotlin"
-	case ".py":
-		return "Python"
-	case ".rb":
-		return "Ruby"
-	case ".ts", ".tsx":
-		return "TypeScript"
-	case ".js", ".jsx":
-		return "JavaScript"
-	case ".c", ".h":
-		return "C"
-	case ".cpp", ".cc", ".cxx", ".hpp", ".hxx":
-		return "C++"
-	case ".cs":
-		return "C#"
-	case ".m":
-		return "Objective-C"
-	case ".mm":
-		return "Objective-C++"
+	for _, e := range languageTable {
+		if slices.Contains(e.Extensions, ext) {
+			return e.Display
+		}
+	}
+	return ""
+}
+
+func schemeToLanguage(scheme string) string {
+	for _, e := range languageTable {
+		if slices.Contains(e.Schemes, scheme) {
+			return e.Display
+		}
 	}
 	return ""
 }
 
 // displayLanguage maps SCIP Language enum strings to human-readable names.
 // Indexers are inconsistent about case (scip-clang emits "CPP",
-// rust-analyzer emits lowercase "rust"), so normalize here.
+// rust-analyzer emits lowercase "rust"), so normalize here. Unknown
+// values pass through unchanged.
 func displayLanguage(scipLang string) string {
-	switch strings.ToLower(scipLang) {
-	case "cpp":
-		return "C++"
-	case "csharp":
-		return "C#"
-	case "objectivec":
-		return "Objective-C"
-	case "objectivecpp":
-		return "Objective-C++"
-	case "javascript":
-		return "JavaScript"
-	case "typescript":
-		return "TypeScript"
-	case "go":
-		return "Go"
-	case "rust":
-		return "Rust"
-	case "java":
-		return "Java"
-	case "kotlin":
-		return "Kotlin"
-	case "python":
-		return "Python"
-	case "ruby":
-		return "Ruby"
-	case "c":
-		return "C"
+	lower := strings.ToLower(scipLang)
+	for _, e := range languageTable {
+		if slices.Contains(e.SCIPNames, lower) {
+			return e.Display
+		}
 	}
 	return scipLang
 }
