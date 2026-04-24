@@ -1,8 +1,6 @@
 package scipextract
 
 import (
-	"strings"
-
 	"github.com/scip-code/scip/bindings/go/scip"
 
 	"github.com/loov/dreamlint/extract"
@@ -82,7 +80,7 @@ func buildTypeInfo(info *scip.SymbolInformation, doc *scip.Document, absPath str
 		Name:      name,
 		Kind:      kindString(info.Kind),
 		Signature: sig,
-		Doc:       strings.Join(info.Documentation, "\n\n"),
+		Doc:       joinDoc(info.Documentation),
 		Position:  pos,
 	}
 }

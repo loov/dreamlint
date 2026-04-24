@@ -3,7 +3,6 @@ package scipextract
 import (
 	"math"
 	"sort"
-	"strings"
 
 	"github.com/scip-code/scip/bindings/go/scip"
 
@@ -276,7 +275,7 @@ func buildExternalFunc(symbol string, extSymIndex map[string]*scip.SymbolInforma
 		if info.SignatureDocumentation != nil {
 			ext.Signature = info.SignatureDocumentation.Text
 		}
-		ext.Doc = strings.Join(info.Documentation, "\n\n")
+		ext.Doc = joinDoc(info.Documentation)
 	}
 
 	return ext

@@ -78,6 +78,13 @@ func isFunctionSymbol(info *scip.SymbolInformation) bool {
 	return classifySymbol(info) == classFunction
 }
 
+// joinDoc concatenates multi-paragraph SCIP documentation into the
+// string shape the pipeline expects. Centralising keeps any future
+// normalization (trim, blank-line collapse) in one place.
+func joinDoc(docs []string) string {
+	return strings.Join(docs, "\n\n")
+}
+
 // isCallableDescriptor reports whether a SCIP descriptor identifies a
 // callable entity (function, method, or macro). Shared between internal
 // symbol filtering (isFunctionSymbol) and external-symbol filtering
@@ -127,7 +134,7 @@ func buildFunctionInfo(info *scip.SymbolInformation, doc *scip.Document, absPath
 		Disambiguator: disambiguator,
 		Receiver:      receiver,
 		Signature:     sig,
-		Doc:           strings.Join(info.Documentation, "\n\n"),
+		Doc:           joinDoc(info.Documentation),
 		Position:      pos,
 	}
 }
