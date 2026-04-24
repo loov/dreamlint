@@ -12,37 +12,8 @@ const maxTypeBodyLines = 200
 
 // isTypeSymbol reports whether a SymbolInformation describes a
 // user-defined type (class, struct, interface, trait, enum, type alias).
-// Both the SCIP Descriptor suffix and the higher-level Kind are consulted
-// because indexers are inconsistent about which they populate.
 func isTypeSymbol(info *scip.SymbolInformation) bool {
-	if info == nil || info.Symbol == "" {
-		return false
-	}
-	if scip.IsLocalSymbol(info.Symbol) {
-		return false
-	}
-	switch info.Kind {
-	case scip.SymbolInformation_Class,
-		scip.SymbolInformation_Struct,
-		scip.SymbolInformation_Interface,
-		scip.SymbolInformation_Trait,
-		scip.SymbolInformation_Enum,
-		scip.SymbolInformation_Type,
-		scip.SymbolInformation_TypeAlias,
-		scip.SymbolInformation_TypeClass,
-		scip.SymbolInformation_Protocol,
-		scip.SymbolInformation_Union:
-		return true
-	}
-	// Fall back to descriptor suffix for indexers that leave Kind unset.
-	// A type symbol ends in a Type descriptor with no following Method or
-	// TypeParameter.
-	sym, err := scip.ParseSymbol(info.Symbol)
-	if err != nil || len(sym.Descriptors) == 0 {
-		return false
-	}
-	last := sym.Descriptors[len(sym.Descriptors)-1]
-	return last.Suffix == scip.Descriptor_Type
+	return classifySymbol(info) == classType
 }
 
 // kindString maps a SCIP Kind to the short tag the prompt renders. For

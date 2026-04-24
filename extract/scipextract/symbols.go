@@ -9,16 +9,28 @@ import (
 	"github.com/loov/dreamlint/extract"
 )
 
-// isFunctionSymbol reports whether a SymbolInformation describes a callable
-// (function, method, constructor, ...). Both the SCIP Descriptor suffix
-// and the higher-level Kind are consulted, because older indexers sometimes
-// only emit one.
-func isFunctionSymbol(info *scip.SymbolInformation) bool {
+// symbolClass is the high-level category this package assigns to a
+// SymbolInformation. Centralising the Kind-switch + descriptor-fallback
+// logic in classifySymbol prevents isFunctionSymbol and isTypeSymbol
+// from drifting (see c658717, which realigned the external-callable
+// filter with isFunctionSymbol after they diverged).
+type symbolClass int
+
+const (
+	classOther symbolClass = iota
+	classFunction
+	classType
+)
+
+// classifySymbol maps a SymbolInformation to its class. Both the SCIP
+// Kind and the descriptor suffix are consulted because indexers are
+// inconsistent about which they populate.
+func classifySymbol(info *scip.SymbolInformation) symbolClass {
 	if info == nil || info.Symbol == "" {
-		return false
+		return classOther
 	}
 	if scip.IsLocalSymbol(info.Symbol) {
-		return false
+		return classOther
 	}
 	switch info.Kind {
 	case scip.SymbolInformation_Function,
@@ -34,13 +46,36 @@ func isFunctionSymbol(info *scip.SymbolInformation) bool {
 		scip.SymbolInformation_SingletonMethod,
 		scip.SymbolInformation_MethodAlias,
 		scip.SymbolInformation_Macro:
-		return true
+		return classFunction
+	case scip.SymbolInformation_Class,
+		scip.SymbolInformation_Struct,
+		scip.SymbolInformation_Interface,
+		scip.SymbolInformation_Trait,
+		scip.SymbolInformation_Enum,
+		scip.SymbolInformation_Type,
+		scip.SymbolInformation_TypeAlias,
+		scip.SymbolInformation_TypeClass,
+		scip.SymbolInformation_Protocol,
+		scip.SymbolInformation_Union:
+		return classType
 	}
 	sym, err := scip.ParseSymbol(info.Symbol)
 	if err != nil || len(sym.Descriptors) == 0 {
-		return false
+		return classOther
 	}
-	return isCallableDescriptor(sym.Descriptors[len(sym.Descriptors)-1])
+	last := sym.Descriptors[len(sym.Descriptors)-1]
+	if isCallableDescriptor(last) {
+		return classFunction
+	}
+	if last.Suffix == scip.Descriptor_Type {
+		return classType
+	}
+	return classOther
+}
+
+// isFunctionSymbol reports whether a SymbolInformation describes a callable.
+func isFunctionSymbol(info *scip.SymbolInformation) bool {
+	return classifySymbol(info) == classFunction
 }
 
 // isCallableDescriptor reports whether a SCIP descriptor identifies a

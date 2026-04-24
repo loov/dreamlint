@@ -82,8 +82,8 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 	for _, doc := range docs {
 		absPath := filepath.Join(root, doc.RelativePath)
 		for _, sym := range doc.Symbols {
-			switch {
-			case isFunctionSymbol(sym):
+			switch classifySymbol(sym) {
+			case classFunction:
 				if _, dup := symbolToID[sym.Symbol]; dup {
 					warnings = append(warnings, fmt.Sprintf("duplicate function symbol %s in %s (first wins)", sym.Symbol, doc.RelativePath))
 					continue
@@ -95,7 +95,7 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 				symbolToID[sym.Symbol] = fn.ID()
 				fnEntries = append(fnEntries, fnEntry{info: sym, doc: doc, absPath: absPath, fn: fn})
 				funcs = append(funcs, fn)
-			case isTypeSymbol(sym):
+			case classType:
 				if _, dup := typesBySymbol[sym.Symbol]; dup {
 					warnings = append(warnings, fmt.Sprintf("duplicate type symbol %s in %s (first wins)", sym.Symbol, doc.RelativePath))
 					continue
