@@ -102,11 +102,11 @@ func receiverKey(pkg, name string) string {
 	return pkg + "." + name
 }
 
-// typeDefinitionRanges returns a per-symbol range that covers each
-// type's declaration body. It mirrors definitionRanges but is kept
-// separate so it doesn't interfere with the function-body span
-// heuristic (a type's body usually encloses its methods).
-func typeDefinitionRanges(doc *scip.Document, typeSymbols map[string]bool) map[string]scip.Range {
+// typeDefinitionRanges returns per-type definition ranges mirroring
+// definitionRanges but kept separate so it doesn't interfere with the
+// function-body span heuristic (a type's body usually encloses its
+// methods).
+func typeDefinitionRanges(doc *scip.Document, typeSymbols map[string]bool) docDefinitions {
 	return collectDefinitionRanges(doc, func(sym string) bool {
 		return typeSymbols[sym]
 	}, func(startLine int32) int32 { return startLine + maxTypeBodyLines })

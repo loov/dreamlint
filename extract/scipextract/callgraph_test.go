@@ -45,7 +45,7 @@ func TestBuildCallgraph_InternalEdge(t *testing.T) {
 		aSym: "example.a",
 		bSym: "example.b",
 	}
-	docRanges := map[*scip.Document]map[string]scip.Range{
+	docRanges := map[*scip.Document]docDefinitions{
 		doc: definitionRanges(doc, symToID),
 	}
 
@@ -100,7 +100,7 @@ func TestBuildCallgraph_ExternalRef(t *testing.T) {
 	}
 
 	symToID := map[string]string{aSym: "example.a"}
-	docRanges := map[*scip.Document]map[string]scip.Range{
+	docRanges := map[*scip.Document]docDefinitions{
 		doc: definitionRanges(doc, symToID),
 	}
 
@@ -191,7 +191,7 @@ func TestDefinitionRanges_NestedTruncation(t *testing.T) {
 		innerSym: "x.inner",
 	}
 
-	ranges := definitionRanges(doc, symToID)
+	ranges := definitionRanges(doc, symToID).ByID
 
 	outerR := ranges[outerSym]
 	if int(outerR.End.Line) != 5 {

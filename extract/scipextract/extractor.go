@@ -112,8 +112,8 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 	}
 
 	// Pass 2: per-doc definition ranges (with span-to-next-function fallback).
-	docRanges := make(map[*scip.Document]map[string]scip.Range, len(docs))
-	docTypeRanges := make(map[*scip.Document]map[string]scip.Range, len(docs))
+	docRanges := make(map[*scip.Document]docDefinitions, len(docs))
+	docTypeRanges := make(map[*scip.Document]docDefinitions, len(docs))
 	for _, doc := range docs {
 		docRanges[doc] = definitionRanges(doc, symbolToID)
 		docTypeRanges[doc] = typeDefinitionRanges(doc, typeSymbolSet)
@@ -122,14 +122,14 @@ func (e *Extractor) Extract(ctx context.Context) (*extract.Result, error) {
 	// Pass 3: bodies use the shared ranges so indexers without
 	// EnclosingRange (e.g. scip-clang) still get useful function bodies.
 	for _, e := range fnEntries {
-		body, warn := extractBody(e.info, e.doc, e.absPath, docRanges[e.doc], src)
+		body, warn := extractBody(e.info, e.doc, e.absPath, docRanges[e.doc].ByID, src)
 		e.fn.Body = body
 		if warn != "" {
 			warnings = append(warnings, warn)
 		}
 	}
 	for _, e := range typeEntries {
-		e.ti.Body = extractTypeBody(e.info, e.doc, e.absPath, docTypeRanges[e.doc], src)
+		e.ti.Body = extractTypeBody(e.info, e.doc, e.absPath, docTypeRanges[e.doc].ByID, src)
 	}
 
 	// Link methods to their receiver type (by package + receiver name,

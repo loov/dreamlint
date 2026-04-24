@@ -21,7 +21,7 @@ import (
 func buildCallgraph(
 	docs []*scip.Document,
 	index *scip.Index,
-	docRanges map[*scip.Document]map[string]scip.Range,
+	docRanges map[*scip.Document]docDefinitions,
 	symbolToID map[string]string,
 ) (map[string][]string, map[string]*extract.ExternalFunc) {
 	graph := make(map[string][]string, len(symbolToID))
@@ -50,29 +50,19 @@ func buildCallgraph(
 	}
 
 	for _, doc := range docs {
-		defRanges := docRanges[doc]
+		defs := docRanges[doc]
 
-		// Build a sorted list of caller ranges for this document so we
-		// can walk occurrences once instead of once per symbol.
+		// docDefinitions.Sorted is already in start-position order and
+		// only contains internal symbols, so walk it directly as the
+		// caller list.
 		type caller struct {
 			id string
 			r  scip.Range
 		}
-		var callers []caller
-		for _, sym := range doc.Symbols {
-			callerID, ok := symbolToID[sym.Symbol]
-			if !ok {
-				continue
-			}
-			r, ok := defRanges[sym.Symbol]
-			if !ok {
-				continue
-			}
-			callers = append(callers, caller{id: callerID, r: r})
+		callers := make([]caller, 0, len(defs.Sorted))
+		for _, rs := range defs.Sorted {
+			callers = append(callers, caller{id: symbolToID[rs.Symbol], r: rs.Range})
 		}
-		sort.Slice(callers, func(i, j int) bool {
-			return callers[i].r.Start.Less(callers[j].r.Start)
-		})
 
 		// Walk each occurrence once, attributing it to every caller
 		// whose range contains it.
@@ -123,8 +113,24 @@ func buildCallgraph(
 	return graph, external
 }
 
-// definitionRanges returns a map from function symbol to the source range
-// that should be considered "inside" that function for callgraph purposes.
+// rangedSymbol pairs a symbol with its resolved definition range. It
+// carries the sorted-by-start invariant when returned as part of
+// docDefinitions.Sorted.
+type rangedSymbol struct {
+	Symbol string
+	Range  scip.Range
+}
+
+// docDefinitions holds the per-document output of collectDefinitionRanges:
+// a by-symbol lookup (for body extraction) and the same entries sorted
+// by start position (for the callgraph containment walk).
+type docDefinitions struct {
+	ByID   map[string]scip.Range
+	Sorted []rangedSymbol
+}
+
+// definitionRanges returns per-function source ranges that should be
+// considered "inside" each function for callgraph purposes.
 //
 // Preferred: the occurrence's EnclosingRange. Some indexers (notably
 // scip-clang) don't emit EnclosingRange, in which case we fall back to a
@@ -143,7 +149,7 @@ func buildCallgraph(
 //
 // Only symbols present in internal are considered — this keeps file/
 // namespace definitions from segmenting the per-function spans.
-func definitionRanges(doc *scip.Document, internal map[string]string) map[string]scip.Range {
+func definitionRanges(doc *scip.Document, internal map[string]string) docDefinitions {
 	return collectDefinitionRanges(doc, func(sym string) bool {
 		_, ok := internal[sym]
 		return ok
@@ -153,13 +159,13 @@ func definitionRanges(doc *scip.Document, internal map[string]string) map[string
 // collectDefinitionRanges scans doc for Definition occurrences whose
 // symbol passes include, computes a source range for each (preferring
 // EnclosingRange, falling back to span-to-next-definition), and returns
-// the result keyed by symbol string.
+// both a per-symbol map and the entries sorted by start position.
 //
 // lastFallbackEnd returns the End.Line for the last entry when
 // EnclosingRange is absent. It receives the entry's Start.Line so
 // callers can compute either an absolute value (math.MaxInt32 for
 // functions) or a relative one (startLine + N for types).
-func collectDefinitionRanges(doc *scip.Document, include func(string) bool, lastFallbackEnd func(startLine int32) int32) map[string]scip.Range {
+func collectDefinitionRanges(doc *scip.Document, include func(string) bool, lastFallbackEnd func(startLine int32) int32) docDefinitions {
 	type entry struct {
 		sym          string
 		r            scip.Range
@@ -198,7 +204,8 @@ func collectDefinitionRanges(doc *scip.Document, include func(string) bool, last
 		return entries[i].r.Start.Less(entries[j].r.Start)
 	})
 
-	out := make(map[string]scip.Range, len(entries))
+	byID := make(map[string]scip.Range, len(entries))
+	sorted := make([]rangedSymbol, 0, len(entries))
 	for i, e := range entries {
 		if !e.hasEnclosing {
 			if i+1 < len(entries) {
@@ -207,9 +214,10 @@ func collectDefinitionRanges(doc *scip.Document, include func(string) bool, last
 				e.r.End = scip.Position{Line: lastFallbackEnd(e.r.Start.Line)}
 			}
 		}
-		out[e.sym] = e.r
+		byID[e.sym] = e.r
+		sorted = append(sorted, rangedSymbol{Symbol: e.sym, Range: e.r})
 	}
-	return out
+	return docDefinitions{ByID: byID, Sorted: sorted}
 }
 
 // externalID is the key used in the callgraph and ExternalFunc map for

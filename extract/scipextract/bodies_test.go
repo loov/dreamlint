@@ -29,7 +29,7 @@ func TestExtractBody_EnclosingRange_FromDocText(t *testing.T) {
 		DisplayName: "foo",
 	}
 	cache := newSourceCache("")
-	ranges := definitionRanges(doc, map[string]string{info.Symbol: "example.foo"})
+	ranges := definitionRanges(doc, map[string]string{info.Symbol: "example.foo"}).ByID
 	body, warn := extractBody(info, doc, "/repo/src/lib.rs", ranges, cache)
 	if warn != "" {
 		t.Errorf("unexpected warning: %s", warn)
@@ -58,7 +58,7 @@ func TestExtractBody_FallsBackToDefinitionRange(t *testing.T) {
 		Kind:   scip.SymbolInformation_Function,
 	}
 	cache := newSourceCache("")
-	ranges := definitionRanges(doc, map[string]string{info.Symbol: "example.foo"})
+	ranges := definitionRanges(doc, map[string]string{info.Symbol: "example.foo"}).ByID
 	body, warn := extractBody(info, doc, "/repo/src/lib.rs", ranges, cache)
 	if warn == "" {
 		t.Error("expected a warning when EnclosingRange is missing")
@@ -96,7 +96,7 @@ func TestExtractBody_ReadsFromDisk(t *testing.T) {
 		Kind:   scip.SymbolInformation_Function,
 	}
 	cache := newSourceCache(dir)
-	ranges := definitionRanges(doc, map[string]string{info.Symbol: "example.foo"})
+	ranges := definitionRanges(doc, map[string]string{info.Symbol: "example.foo"}).ByID
 	body, warn := extractBody(info, doc, abs, ranges, cache)
 	if warn != "" {
 		t.Errorf("unexpected warning: %s", warn)
