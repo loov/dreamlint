@@ -51,36 +51,47 @@ func buildCallgraph(
 
 	for _, doc := range docs {
 		defRanges := docRanges[doc]
+
+		// Build a sorted list of caller ranges for this document so we
+		// can walk occurrences once instead of once per symbol.
+		type caller struct {
+			id string
+			r  scip.Range
+		}
+		var callers []caller
 		for _, sym := range doc.Symbols {
 			callerID, ok := symbolToID[sym.Symbol]
 			if !ok {
 				continue
 			}
-			callerRange, ok := defRanges[sym.Symbol]
+			r, ok := defRanges[sym.Symbol]
 			if !ok {
 				continue
 			}
-			for _, occ := range doc.Occurrences {
-				if occ.Symbol == "" || occ.Symbol == sym.Symbol {
-					continue
-				}
-				if occ.SymbolRoles&int32(scip.SymbolRole_Definition) != 0 {
-					continue
-				}
-				or, err := scip.NewRange(occ.Range)
-				if err != nil {
-					continue
-				}
-				if !callerRange.Contains(or.Start) {
-					continue
-				}
-				if calleeID, ok := symbolToID[occ.Symbol]; ok {
-					if calleeID != callerID {
-						addEdge(callerID, calleeID)
-					}
-					continue
-				}
-				// External reference.
+			callers = append(callers, caller{id: callerID, r: r})
+		}
+		sort.Slice(callers, func(i, j int) bool {
+			return callers[i].r.Start.Less(callers[j].r.Start)
+		})
+
+		// Walk each occurrence once, attributing it to every caller
+		// whose range contains it.
+		for _, occ := range doc.Occurrences {
+			if occ.Symbol == "" {
+				continue
+			}
+			if occ.SymbolRoles&int32(scip.SymbolRole_Definition) != 0 {
+				continue
+			}
+			or, err := scip.NewRange(occ.Range)
+			if err != nil {
+				continue
+			}
+
+			// Resolve the callee once — it's the same regardless of
+			// which caller contains this occurrence.
+			calleeID, isInternal := symbolToID[occ.Symbol]
+			if !isInternal {
 				extID := externalID(occ.Symbol)
 				if !externalSeen[extID] {
 					ext := buildExternalFunc(occ.Symbol, extSymIndex)
@@ -90,7 +101,21 @@ func buildCallgraph(
 					external[extID] = ext
 					externalSeen[extID] = true
 				}
-				addEdge(callerID, extID)
+				calleeID = extID
+			}
+
+			// Scan callers sorted by start position; stop once the
+			// caller starts past the occurrence.
+			for _, c := range callers {
+				if or.Start.Less(c.r.Start) {
+					break
+				}
+				if !c.r.Contains(or.Start) {
+					continue
+				}
+				if calleeID != c.id {
+					addEdge(c.id, calleeID)
+				}
 			}
 		}
 	}
