@@ -144,6 +144,22 @@ func buildCallgraph(
 // Only symbols present in internal are considered — this keeps file/
 // namespace definitions from segmenting the per-function spans.
 func definitionRanges(doc *scip.Document, internal map[string]string) map[string]scip.Range {
+	return collectDefinitionRanges(doc, func(sym string) bool {
+		_, ok := internal[sym]
+		return ok
+	}, func(_ int32) int32 { return math.MaxInt32 })
+}
+
+// collectDefinitionRanges scans doc for Definition occurrences whose
+// symbol passes include, computes a source range for each (preferring
+// EnclosingRange, falling back to span-to-next-definition), and returns
+// the result keyed by symbol string.
+//
+// lastFallbackEnd returns the End.Line for the last entry when
+// EnclosingRange is absent. It receives the entry's Start.Line so
+// callers can compute either an absolute value (math.MaxInt32 for
+// functions) or a relative one (startLine + N for types).
+func collectDefinitionRanges(doc *scip.Document, include func(string) bool, lastFallbackEnd func(startLine int32) int32) map[string]scip.Range {
 	type entry struct {
 		sym          string
 		r            scip.Range
@@ -155,13 +171,7 @@ func definitionRanges(doc *scip.Document, internal map[string]string) map[string
 		if occ.SymbolRoles&int32(scip.SymbolRole_Definition) == 0 {
 			continue
 		}
-		if occ.Symbol == "" {
-			continue
-		}
-		if _, ok := internal[occ.Symbol]; !ok {
-			continue
-		}
-		if seen[occ.Symbol] {
+		if occ.Symbol == "" || !include(occ.Symbol) || seen[occ.Symbol] {
 			continue
 		}
 		seen[occ.Symbol] = true
@@ -192,10 +202,9 @@ func definitionRanges(doc *scip.Document, internal map[string]string) map[string
 	for i, e := range entries {
 		if !e.hasEnclosing {
 			if i+1 < len(entries) {
-				// Stop at the start of the next function's line, exclusive.
 				e.r.End = scip.Position{Line: entries[i+1].r.Start.Line}
 			} else {
-				e.r.End = scip.Position{Line: math.MaxInt32}
+				e.r.End = scip.Position{Line: lastFallbackEnd(e.r.Start.Line)}
 			}
 		}
 		out[e.sym] = e.r

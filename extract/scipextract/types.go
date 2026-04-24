@@ -1,7 +1,6 @@
 package scipextract
 
 import (
-	"sort"
 	"strings"
 
 	"github.com/scip-code/scip/bindings/go/scip"
@@ -129,56 +128,9 @@ func typeID(t *extract.TypeInfo) string {
 // separate so it doesn't interfere with the function-body span
 // heuristic (a type's body usually encloses its methods).
 func typeDefinitionRanges(doc *scip.Document, typeSymbols map[string]bool) map[string]scip.Range {
-	type entry struct {
-		sym          string
-		r            scip.Range
-		hasEnclosing bool
-	}
-	var entries []entry
-	seen := make(map[string]bool)
-	for _, occ := range doc.Occurrences {
-		if occ.SymbolRoles&int32(scip.SymbolRole_Definition) == 0 {
-			continue
-		}
-		if occ.Symbol == "" || !typeSymbols[occ.Symbol] || seen[occ.Symbol] {
-			continue
-		}
-		seen[occ.Symbol] = true
-
-		var r scip.Range
-		hasEnc := false
-		if len(occ.EnclosingRange) > 0 {
-			if rr, err := scip.NewRange(occ.EnclosingRange); err == nil {
-				r = rr
-				hasEnc = true
-			}
-		}
-		if !hasEnc {
-			rr, err := scip.NewRange(occ.Range)
-			if err != nil {
-				continue
-			}
-			r = rr
-		}
-		entries = append(entries, entry{sym: occ.Symbol, r: r, hasEnclosing: hasEnc})
-	}
-
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].r.Start.Less(entries[j].r.Start)
-	})
-
-	out := make(map[string]scip.Range, len(entries))
-	for i, e := range entries {
-		if !e.hasEnclosing {
-			if i+1 < len(entries) {
-				e.r.End = scip.Position{Line: entries[i+1].r.Start.Line}
-			} else {
-				e.r.End = scip.Position{Line: e.r.Start.Line + maxTypeBodyLines}
-			}
-		}
-		out[e.sym] = e.r
-	}
-	return out
+	return collectDefinitionRanges(doc, func(sym string) bool {
+		return typeSymbols[sym]
+	}, func(startLine int32) int32 { return startLine + maxTypeBodyLines })
 }
 
 // extractTypeBody slices the source text for a type's declaration. Falls
