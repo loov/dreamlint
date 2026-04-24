@@ -183,6 +183,23 @@ func TestReceiverName(t *testing.T) {
 			},
 			want: "",
 		},
+		{
+			name: "TypeParameter-only before method returns empty",
+			desc: []*scip.Descriptor{
+				{Name: "T", Suffix: scip.Descriptor_TypeParameter},
+				{Name: "call", Suffix: scip.Descriptor_Method},
+			},
+			want: "",
+		},
+		{
+			name: "Namespace then TypeParameter then Method returns empty",
+			desc: []*scip.Descriptor{
+				{Name: "ns", Suffix: scip.Descriptor_Namespace},
+				{Name: "T", Suffix: scip.Descriptor_TypeParameter},
+				{Name: "call", Suffix: scip.Descriptor_Method},
+			},
+			want: "",
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
