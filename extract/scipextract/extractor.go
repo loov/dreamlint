@@ -217,7 +217,8 @@ func pickLanguage(docs []*scip.Document) string {
 }
 
 // inferLanguageFromScheme maps the scheme of the first parseable symbol to
-// a display language. Best-effort — returns "" if no scheme is recognized.
+// a display language. Falls back to guessing from file extensions when no
+// scheme is recognized. Best-effort — returns "" if nothing matches.
 func inferLanguageFromScheme(docs []*scip.Document) string {
 	for _, doc := range docs {
 		for _, info := range doc.Symbols {
@@ -242,6 +243,61 @@ func inferLanguageFromScheme(docs []*scip.Document) string {
 				return "C++"
 			}
 		}
+	}
+	return inferLanguageFromExtension(docs)
+}
+
+// inferLanguageFromExtension guesses the language from the most common
+// file extension across documents. Last-resort fallback when neither
+// Document.Language nor the symbol scheme is informative.
+func inferLanguageFromExtension(docs []*scip.Document) string {
+	counts := make(map[string]int)
+	for _, doc := range docs {
+		ext := strings.ToLower(filepath.Ext(doc.RelativePath))
+		if lang := extToLanguage(ext); lang != "" {
+			counts[lang]++
+		}
+	}
+	if len(counts) == 0 {
+		return ""
+	}
+	best, bestN := "", 0
+	for lang, n := range counts {
+		if n > bestN || (n == bestN && lang < best) {
+			best, bestN = lang, n
+		}
+	}
+	return best
+}
+
+func extToLanguage(ext string) string {
+	switch ext {
+	case ".go":
+		return "Go"
+	case ".rs":
+		return "Rust"
+	case ".java":
+		return "Java"
+	case ".kt", ".kts":
+		return "Kotlin"
+	case ".py":
+		return "Python"
+	case ".rb":
+		return "Ruby"
+	case ".ts", ".tsx":
+		return "TypeScript"
+	case ".js", ".jsx":
+		return "JavaScript"
+	case ".c", ".h":
+		return "C"
+	case ".cpp", ".cc", ".cxx", ".hpp", ".hxx":
+		return "C++"
+	case ".cs":
+		return "C#"
+	case ".m":
+		return "Objective-C"
+	case ".mm":
+		return "Objective-C++"
 	}
 	return ""
 }

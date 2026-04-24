@@ -397,6 +397,21 @@ func TestPickLanguage(t *testing.T) {
 		}
 	})
 
+	t.Run("unknown scheme falls back to file extension", func(t *testing.T) {
+		docs := []*scip.Document{
+			{
+				Language:     "",
+				RelativePath: "src/main.rs",
+				Symbols: []*scip.SymbolInformation{
+					{Symbol: "unknown-indexer pkg x 0.1.0 main()."},
+				},
+			},
+		}
+		if got := pickLanguage(docs); got != "Rust" {
+			t.Errorf("got %q, want Rust", got)
+		}
+	})
+
 	t.Run("no docs returns empty", func(t *testing.T) {
 		if got := pickLanguage(nil); got != "" {
 			t.Errorf("got %q, want empty", got)
