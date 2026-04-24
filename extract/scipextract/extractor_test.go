@@ -315,14 +315,17 @@ func TestExtract_ProjectRootOverride(t *testing.T) {
 
 func TestStripFileURI(t *testing.T) {
 	cases := map[string]string{
-		"":                                "",
-		"/plain/path":                     "/plain/path",
+		"":                               "",
+		"/plain/path":                    "/plain/path",
 		"file:///home/user/project":      "/home/user/project",
 		"file:///C:/src/project":         "C:/src/project",
 		"file:///c:/src/project":         "c:/src/project",
 		"file://C:/src/project":          "C:/src/project",
 		"file:///Z:/with/space dir":      "Z:/with/space dir",
 		"file://host/share/path":         "host/share/path",
+		"file:///home/user/a%20b":        "/home/user/a b",
+		"file:///home/user/%C3%A9":       "/home/user/é",
+		"file:///home/user/a%zzb":        "/home/user/a%zzb",
 	}
 	for in, want := range cases {
 		if got := stripFileURI(in); got != want {

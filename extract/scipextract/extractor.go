@@ -8,6 +8,7 @@ package scipextract
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
@@ -307,12 +308,16 @@ func displayLanguage(scipLang string) string {
 
 // stripFileURI converts a "file://..." URI into a local path. Handles
 // both POSIX form ("file:///home/u/p" → "/home/u/p") and Windows form
-// ("file:///C:/p" → "C:/p", "file://C:/p" → "C:/p").
+// ("file:///C:/p" → "C:/p", "file://C:/p" → "C:/p"). Percent-escapes
+// in the path (e.g. "%20" for space) are decoded.
 func stripFileURI(uri string) string {
 	s := strings.TrimPrefix(uri, "file://")
 	// Windows drive-letter paths: drop the leading "/" in "/C:/...".
 	if len(s) >= 3 && s[0] == '/' && isDriveLetter(s[1]) && s[2] == ':' {
 		s = s[1:]
+	}
+	if decoded, err := url.PathUnescape(s); err == nil {
+		return decoded
 	}
 	return s
 }
