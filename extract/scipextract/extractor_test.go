@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/scip-code/scip/bindings/go/scip"
@@ -756,5 +757,138 @@ func TestExtract_PathFilterExcludesType(t *testing.T) {
 	}
 	if fn.ReceiverType != "" {
 		t.Errorf("ReceiverType = %q, want empty (type excluded by filter)", fn.ReceiverType)
+	}
+}
+
+// TestExtract_DuplicateSymbolAcrossDocuments verifies that when the same
+// function symbol appears in two documents, the first document wins for
+// the FunctionInfo (body, position) and a duplicate-symbol warning is
+// emitted. References in the second document's other functions should
+// still produce callgraph edges.
+func TestExtract_DuplicateSymbolAcrossDocuments(t *testing.T) {
+	dir := t.TempDir()
+
+	// Two files, both declare the same symbol.
+	fileA := "src/a.rs"
+	fileB := "src/b.rs"
+	for _, rel := range []string{fileA, fileB} {
+		abs := filepath.Join(dir, rel)
+		if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(abs, []byte("fn foo() { 1 }\nfn bar() { foo() }\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	fooSym := "rust-analyzer cargo example 0.1.0 foo()."
+	barSym := "rust-analyzer cargo example 0.1.0 bar()."
+
+	index := &scip.Index{
+		Metadata: &scip.Metadata{ProjectRoot: "file://" + dir},
+		Documents: []*scip.Document{
+			{
+				Language:     "Rust",
+				RelativePath: fileA,
+				Symbols: []*scip.SymbolInformation{
+					{Symbol: fooSym, Kind: scip.SymbolInformation_Function, DisplayName: "foo"},
+				},
+				Occurrences: []*scip.Occurrence{
+					{
+						Symbol:         fooSym,
+						Range:          []int32{0, 3, 0, 6},
+						EnclosingRange: []int32{0, 0, 0, 14},
+						SymbolRoles:    int32(scip.SymbolRole_Definition),
+					},
+				},
+			},
+			{
+				Language:     "Rust",
+				RelativePath: fileB,
+				Symbols: []*scip.SymbolInformation{
+					// Same foo symbol — duplicate, should be skipped.
+					{Symbol: fooSym, Kind: scip.SymbolInformation_Function, DisplayName: "foo"},
+					{Symbol: barSym, Kind: scip.SymbolInformation_Function, DisplayName: "bar"},
+				},
+				Occurrences: []*scip.Occurrence{
+					{
+						Symbol:         fooSym,
+						Range:          []int32{0, 3, 0, 6},
+						EnclosingRange: []int32{0, 0, 0, 14},
+						SymbolRoles:    int32(scip.SymbolRole_Definition),
+					},
+					{
+						Symbol:         barSym,
+						Range:          []int32{1, 3, 1, 6},
+						EnclosingRange: []int32{1, 0, 1, 18},
+						SymbolRoles:    int32(scip.SymbolRole_Definition),
+					},
+					// bar references foo.
+					{
+						Symbol:      fooSym,
+						Range:       []int32{1, 11, 1, 14},
+						SymbolRoles: int32(scip.SymbolRole_ReadAccess),
+					},
+				},
+			},
+		},
+	}
+
+	idxPath := writeIndex(t, dir, index)
+	ex := &Extractor{IndexPath: idxPath}
+	res, err := ex.Extract(context.Background())
+	if err != nil {
+		t.Fatalf("Extract: %v", err)
+	}
+
+	// Should have 2 units: foo and bar.
+	if len(res.Units) != 2 {
+		ids := make([]string, 0, len(res.Units))
+		for _, u := range res.Units {
+			ids = append(ids, u.ID)
+		}
+		t.Fatalf("got %d units %v, want 2", len(res.Units), ids)
+	}
+
+	// foo's position should come from the first document (a.rs).
+	for _, u := range res.Units {
+		for _, fn := range u.Functions {
+			if fn.Name == "foo" {
+				if !filepath.IsAbs(fn.Position.Filename) {
+					t.Errorf("foo position filename not absolute: %q", fn.Position.Filename)
+				}
+				if fn.Position.Filename != filepath.Join(dir, fileA) {
+					t.Errorf("foo position = %s, want %s (first doc wins)", fn.Position.Filename, filepath.Join(dir, fileA))
+				}
+			}
+		}
+	}
+
+	// bar should still call foo (cross-document reference works).
+	for _, u := range res.Units {
+		for _, fn := range u.Functions {
+			if fn.Name == "bar" {
+				found := false
+				for _, c := range u.Callees {
+					if c == "example.foo" {
+						found = true
+					}
+				}
+				if !found {
+					t.Errorf("bar.Callees = %v, want to contain example.foo", u.Callees)
+				}
+			}
+		}
+	}
+
+	// A duplicate-symbol warning should be emitted.
+	foundWarning := false
+	for _, w := range res.Warnings {
+		if strings.Contains(w, "duplicate") {
+			foundWarning = true
+		}
+	}
+	if !foundWarning {
+		t.Errorf("expected a duplicate-symbol warning, got %v", res.Warnings)
 	}
 }
