@@ -94,11 +94,11 @@ func FromReport(r *report.Report) *Report {
 // severityToLevel converts our severity to SARIF level
 func severityToLevel(s report.Severity) string {
 	switch s {
-	case report.SeverityCritical:
+	case report.SeverityCritical, report.SeverityHigh:
 		return "error"
-	case "important":
+	case report.SeverityMedium:
 		return "warning"
-	case "minor":
+	case report.SeverityLow, report.SeverityInfo:
 		return "note"
 	default:
 		return "note"

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"go/token"
 	"io/fs"
 	"path/filepath"
 	"sort"
@@ -367,20 +368,23 @@ func (p *Pipeline) Analyze(ctx context.Context, unit *extract.AnalysisUnit, call
 				fn = unit.Functions[0]
 			}
 
-			pos := fn.Position
-			// Find line by matching code snippet, using LLM's line as hint
-			if issue.Code != "" && fn != nil {
-				// Convert absolute line hint to relative line within function body
-				hintLine := 0
-				if issue.Line > 0 {
-					hintLine = issue.Line - pos.Line + 1
+			var pos token.Position
+			if fn != nil {
+				pos = fn.Position
+				// Find line by matching code snippet, using LLM's line as hint
+				if issue.Code != "" {
+					// Convert absolute line hint to relative line within function body
+					hintLine := 0
+					if issue.Line > 0 {
+						hintLine = issue.Line - pos.Line + 1
+					}
+					if line := findLineInBody(fn.Body, issue.Code, hintLine); line > 0 {
+						pos.Line = pos.Line + line - 1
+					}
+				} else if issue.Line > 0 {
+					// Fallback to LLM line if no code snippet provided
+					pos.Line = pos.Line + issue.Line - 1
 				}
-				if line := findLineInBody(fn.Body, issue.Code, hintLine); line > 0 {
-					pos.Line = pos.Line + line - 1
-				}
-			} else if issue.Line > 0 {
-				// Fallback to LLM line if no code snippet provided
-				pos.Line = pos.Line + issue.Line - 1
 			}
 
 			unitReport.Issues = append(unitReport.Issues, report.Issue{
