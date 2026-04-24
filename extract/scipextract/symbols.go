@@ -180,13 +180,14 @@ func definitionPosition(symbol string, doc *scip.Document, absPath string) token
 		if occ.SymbolRoles&int32(scip.SymbolRole_Definition) == 0 {
 			continue
 		}
-		if len(occ.Range) == 0 {
+		r, err := scip.NewRange(occ.Range)
+		if err != nil {
 			continue
 		}
 		return token.Position{
 			Filename: absPath,
-			Line:     int(occ.Range[0]) + 1,
-			Column:   int(occ.Range[1]) + 1,
+			Line:     int(r.Start.Line) + 1,
+			Column:   int(r.Start.Character) + 1,
 		}
 	}
 	return token.Position{Filename: absPath}

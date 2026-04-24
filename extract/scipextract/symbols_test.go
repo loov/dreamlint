@@ -306,6 +306,23 @@ func TestDefinitionPosition_NoDefinition(t *testing.T) {
 	}
 }
 
+func TestDefinitionPosition_MalformedRange(t *testing.T) {
+	sym := "scip-go gomod example v1 foo()."
+	doc := &scip.Document{
+		RelativePath: "src/a.go",
+		Occurrences: []*scip.Occurrence{
+			{Symbol: sym, Range: []int32{}, SymbolRoles: int32(scip.SymbolRole_Definition)},
+			{Symbol: sym, Range: []int32{5}, SymbolRoles: int32(scip.SymbolRole_Definition)},
+			{Symbol: sym, Range: []int32{5, 2}, SymbolRoles: int32(scip.SymbolRole_Definition)},
+			{Symbol: sym, Range: []int32{7, 4, 9}, SymbolRoles: int32(scip.SymbolRole_Definition)},
+		},
+	}
+	pos := definitionPosition(sym, doc, "/repo/src/a.go")
+	if pos.Line != 8 || pos.Column != 5 {
+		t.Errorf("got %d:%d, want 8:5 (first valid range after skipping malformed)", pos.Line, pos.Column)
+	}
+}
+
 func TestIsCallableDescriptor(t *testing.T) {
 	cases := []struct {
 		name string
