@@ -34,7 +34,7 @@ Timing:
 - Async condition polled in a sleep loop. Use a channel.
 
 Isolation:
-- t.SetEnv used. It disables t.Parallel() for the binary. Inject getenv instead.
+- t.Setenv used. It disables t.Parallel() for the binary. Inject getenv instead.
 - t.Parallel() with reads/writes to package-level variables
 - t.Parallel() absent when the test has a fully isolated environment
 

@@ -1,26 +1,26 @@
-You are reviewing {{.Language}} code for logical correctness.
+Check whether this {{.Language}} function correctly implements what it claims to do.
 {{template "function-context" .}}
 {{- template "receiver-type-context" .}}
 {{- template "summary-context" .}}
 
-Does this function correctly implement what it claims to do? Look for:
+Flag any of:
 
-Implementation vs. Intent:
-- Behavior that contradicts the declared purpose, invariants, or documented error conditions
-- A code path that returns success when it should return an error, or vice versa
-- A precondition stated in the summary that the implementation does not actually enforce
+Intent vs. implementation mismatch:
+- Behavior contradicts the declared purpose, invariants, or documented error conditions
+- Code path returns success when it should error, or vice versa
+- Precondition from the summary that the code does not enforce
 
-Logic Errors:
-- Inverted boolean conditions (== where != is needed, < where > is needed)
-- Wrong logical operator (&& vs ||) that produces incorrect short-circuit behavior
-- Off-by-one errors in loop bounds, index expressions, or size calculations
-- Unreachable code following an unconditional return, panic, or continue
-- A switch or if-else chain that silently omits a case that must be handled
-- Integer overflow or underflow in arithmetic that is not guarded
+Logic errors:
+- Inverted condition (== vs !=, < vs >)
+- Wrong logical operator (&& vs ||) producing incorrect short-circuit behavior
+- Off-by-one in loop bounds, indices, or size calculations
+- Unreachable code after unconditional return, panic, or continue
+- Switch/if-else that silently omits a case that must be handled
+- Unguarded integer overflow or underflow
 
-Control Flow:
-- A loop that cannot terminate under reachable inputs
-- Early return that skips required cleanup or postcondition logic
+Control flow:
+- Loop that cannot terminate under reachable inputs
+- Early return that skips required cleanup or postcondition
 - Error path that falls through to success-path code
 
 {{- template "issues-format" .}}

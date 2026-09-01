@@ -1,6 +1,6 @@
 # Example Rule Collections
 
-These are **example configurations** showing how to structure custom analysis passes for dreamlint. They are not meant as universal guidelines — every project has different conventions and priorities.
+These are example configurations showing how to structure custom analysis passes for dreamlint. They are not universal guidelines. Every project has different conventions and priorities.
 
 Use these as a starting point. Copy a category, modify the prompts to match your team's conventions, and remove rules that don't apply.
 
@@ -14,7 +14,7 @@ dreamlint -config examples/web/*
 dreamlint -config examples/core/* -config examples/architecture/* -config examples/web/* -config examples/testing/*
 ```
 
-Each `.cue` file defines a single analysis pass. Files within a category can be loaded independently — you don't need to load the entire category.
+Each `.cue` file defines a single analysis pass. Files within a category load independently, so you don't need the whole category.
 
 ## Categories
 

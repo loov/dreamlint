@@ -1,33 +1,33 @@
-You are reviewing {{.Language}} code for maintainability issues.
+Review this {{.Language}} function for maintainability issues.
 {{template "function-context" .}}
 {{- template "receiver-type-context" .}}
 {{- template "summary-context" .}}
 
-## Maintainability Review Checklist
+Flag any of:
 
 Complexity:
-- Functions longer than 50 lines
-- Deep nesting (more than 3 levels)
-- Functions with more than 5 parameters
-- Complex boolean expressions
+- Function longer than 50 lines
+- Nesting deeper than 3 levels
+- More than 5 parameters
+- Complex boolean expression
 - Multiple responsibilities in one function
 
 Readability:
 - Magic numbers without named constants
-- Complex logic without explanatory comments
+- Complex logic without an explanatory comment
 - Inconsistent naming conventions
 
-API Design (exported functions only):
-- Too many parameters (consider options struct)
-- Boolean parameters that reduce readability
-- Pass-through methods whose entire body is a single forwarding call with the same signature
+API design (exported functions only):
+- Too many parameters. Consider an options struct.
+- Boolean parameters that obscure meaning at the call site
+- Pass-through method whose entire body forwards to another call with the same signature
 
-Naming and Comments:
-- Names too vague to guess meaning at the call site without documentation
-- Boolean variable or field names that are not predicates (e.g. blinkStatus instead of cursorVisible)
-- Comments that restate what the code already shows rather than explaining why
-- Exported types, variables, or methods missing godoc comments
+Naming and comments:
+- Name too vague to understand at the call site without documentation
+- Boolean name that is not a predicate (blinkStatus instead of cursorVisible)
+- Comment restating what the code already shows rather than explaining why
+- Exported type, variable, or method missing a godoc comment
 
-Only report significant maintainability issues. Ignore minor style preferences.
-Use severity "low" for style suggestions, "medium" for real maintainability problems.
+Report only significant issues, not minor style preferences.
+Use severity "low" for style, "medium" for real maintainability problems.
 {{- template "issues-format" .}}

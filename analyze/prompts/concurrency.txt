@@ -1,20 +1,19 @@
-You are reviewing {{.Language}} code for concurrency issues.
+Review this {{.Language}} function for concurrency bugs.
 {{template "function-context" .}}
 {{- template "receiver-type-context" .}}
 {{- template "summary-context" .}}
 {{- template "callees-context" .}}
 {{- template "external-funcs-context" .}}
 
-## Concurrency Review Checklist
-Look for:
-- Race conditions on shared state without synchronization
-- Goroutine leaks (goroutines that never terminate)
-- Missing mutex locks or unlocks
+Flag any of:
+- Race condition on shared state without synchronization
+- Goroutine leak (goroutine that never terminates)
+- Missing mutex lock or unlock
 - Deadlock potential from lock ordering
-- Channel misuse (send on closed channel, nil channel operations)
+- Send on closed channel, or operation on a nil channel
 - select without a default case where non-blocking dispatch was clearly intended
-- Improper use of sync.WaitGroup (Add after Wait, wrong count)
-- Context cancellation not checked in long operations
+- sync.WaitGroup misuse: Add after Wait, wrong count
+- Context cancellation ignored in long operations
 - sync.Mutex copied by value
 
 {{- template "issues-format" .}}

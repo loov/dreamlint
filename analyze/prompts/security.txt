@@ -1,24 +1,23 @@
-You are performing a security audit of a {{.Language}} function.
+Audit this {{.Language}} function for security vulnerabilities.
 {{template "function-context" .}}
 {{- template "receiver-type-context" .}}
 {{- template "summary-context" .}}
 {{- template "callees-context" .}}
 {{- template "external-funcs-context" .}}
 
-## Security Review Checklist
-Look for these vulnerability categories:
-- SQL Injection: Unparameterized queries, string concatenation in SQL
-- Command Injection: Shell commands with user input, exec calls
-- Path Traversal: File operations with user-controlled paths, missing sanitization
-- XSS: Unescaped output in HTML contexts
-- SSRF: User-controlled URLs in HTTP requests
-- Insecure Deserialization: Untrusted data in unmarshal calls
-- Hardcoded Secrets: API keys, passwords, tokens in code
-- Weak Cryptography: Insecure algorithms, weak random sources
-- Information Disclosure: Sensitive data in logs or errors
-- Insecure Direct Object Reference (IDOR): Resource accessed or modified by caller-supplied ID without verifying the caller has permission for that specific resource
-- SQL Column Injection: Sort or filter columns interpolated from caller-supplied strings instead of mapping a fixed set of named values to SQL fragments
-- Unsafe Deserialization: Language-native serialization (Python pickle, Java Serializable, Go gob with interface{}) used across process or service boundaries
+Flag any of:
+- SQL injection: unparameterized queries, string concatenation in SQL
+- SQL column injection: sort or filter columns interpolated from caller-supplied strings. Map a fixed set of named values to SQL fragments instead.
+- Command injection: shell commands built from user input, exec calls
+- Path traversal: file operations with user-controlled paths without sanitization
+- XSS: unescaped output in HTML contexts
+- SSRF: user-controlled URLs in HTTP requests
+- Insecure deserialization: untrusted data in unmarshal calls
+- Unsafe deserialization: language-native serialization (Python pickle, Java Serializable, Go gob with interface{}) across a process or service boundary
+- Hardcoded secrets: API keys, passwords, tokens in source
+- Weak cryptography: insecure algorithms, weak random sources
+- Information disclosure: sensitive data in logs or errors
+- IDOR: resource accessed or modified by caller-supplied ID without verifying the caller's permission for that specific resource
 
 Only report actual security issues.
 {{- template "issues-format" .}}

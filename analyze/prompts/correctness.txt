@@ -1,42 +1,42 @@
-You are reviewing {{.Language}} code for correctness issues.
+Review this {{.Language}} function for error handling, nil safety, and resource management bugs.
 {{template "function-context" .}}
 {{- template "receiver-type-context" .}}
 {{- template "summary-context" .}}
 {{- template "callees-context" .}}
 {{- template "external-funcs-context" .}}
 
-## Correctness Review Checklist
+Flag any of:
 
-Error Handling:
-- Ignored errors (assigned to _ or not checked)
-- Errors propagated without any wrapping or context (use fmt.Errorf with %w, or Op-based domain wrapping if a domain Error type is in use)
-- Panic for recoverable errors
-- Error shadowing in inner scopes
+Error handling:
+- Error assigned to _ or return value not checked
+- Error propagated without adding context the caller lacks
+- Panic used for a recoverable error
+- Error variable shadowed in an inner scope
 
-Nil and Bounds Safety:
-- Nil pointer dereference without check
-- Slice/array access without bounds check
-- Map access assuming key exists when it might not
-- Type assertions without ok check
+Nil and bounds safety:
+- Nil pointer dereference without guard
+- Slice/array index without bounds check
+- Map lookup assuming the key exists
+- Type assertion without comma-ok
 
-Resource Management:
-- Unclosed files, connections, or response bodies
+Resource management:
+- File, connection, or response body not closed
 - Missing defer for cleanup
-- defer in loops (accumulates until function returns)
-- Resources not released on error paths
-- Context cancellation not checked in long operations
-- Missing timeouts on network operations
+- defer inside a loop (defers accumulate until the function returns)
+- Resource not released on an error path
+- Long operation ignoring context cancellation
+- Network operation without a timeout
 
-Error Type Discipline:
-- Lookup-by-ID returning (nil, nil) instead of an ENOTFOUND error
+Error type discipline:
+- Lookup by ID returning (nil, nil) instead of a not-found error
 - External errors (sql.ErrNoRows, os.ErrNotExist) escaping the implementation boundary untranslated
-- Leaf errors carrying both Code and Err (leaf: Code+Message only; wrapping: Op+Err only)
-- Missing Op wrap on significant function boundaries
+- Leaf error carrying both Code and Err. Leaf errors carry Code and Message, wrapping errors carry Op and Err.
+- Missing Op wrap on a significant function boundary
 
-SQL / Data Access:
+SQL and data access:
 - rows.Close() not deferred immediately after a successful QueryContext call
-- Result slice initialized with var (encodes as JSON null) instead of make([]*T, 0)
+- Result slice declared with var (encodes as JSON null). Initialize with make([]*T, 0).
 - rows.Err() not checked after the iteration loop
-- Caller-supplied strings interpolated directly into SQL ORDER BY or WHERE clauses
+- Caller-supplied strings interpolated into a SQL ORDER BY or WHERE clause
 
 {{- template "issues-format" .}}
